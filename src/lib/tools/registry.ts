@@ -465,6 +465,54 @@ const rawTools = [
         "Free EXIF viewer that reads camera, capture, orientation, color profile, and GPS metadata from JPEG, PNG, and WebP images entirely in your browser.",
     },
   },
+  {
+    id: "image-watermark-studio",
+    slug: "image-watermark-studio",
+    name: "Image Watermark Studio",
+    shortDescription:
+      "Add text or logo watermarks, or repair small blemishes on your own images, entirely in your browser.",
+    description: [
+      "Add a text or logo watermark to an image with full control over position, size, opacity, rotation, color, font, shadow, and repetition (single, tiled, or diagonal), dragging it directly on the preview or dialing it in with sliders.",
+      "Switch to Remove / Repair mode to brush, box-select, or lasso a small area — like your own watermark, a timestamp, dust, or a scratch — and run a local content-aware fill, with a manual clone-stamp tool as a fallback and full undo/redo history.",
+      "Everything runs on your device using the Canvas API: images are decoded, edited, and re-encoded locally and are never uploaded. The working preview may be downscaled for smoother editing on large images, but downloads are always rendered at the original resolution.",
+    ],
+    categoryId: "images-media",
+    tags: [
+      "watermark",
+      "add watermark",
+      "logo watermark",
+      "remove watermark",
+      "photo repair",
+      "content-aware fill",
+      "clone stamp",
+      "inpainting",
+    ],
+    aliases: [
+      "watermark maker",
+      "watermark image",
+      "image watermark tool",
+      "photo blemish remover",
+      "object removal tool",
+    ],
+    executionMode: "browser",
+    featured: true,
+    addedAt: "2026-07-21",
+    relatedTools: [
+      "image-compressor",
+      "image-format-converter",
+      "image-metadata-remover",
+    ],
+    usageNotes: [
+      "Large images are downscaled for the interactive preview only — downloads are always rendered from the original file at full resolution.",
+      "The Remove / Repair mode's automatic fill works best on small areas over fairly uniform backgrounds; for complex texture or large areas, use the manual clone-stamp tool for more control.",
+      "Only use Remove / Repair on images you own or have permission to edit — it isn't a way to strip ownership marks, watermarks, or credits from images that aren't yours, and results are never guaranteed to be perfect or undetectable.",
+      "JPEG output doesn't support transparency; a logo watermark's transparent areas or a PNG's alpha channel will be filled white when exporting to JPEG.",
+    ],
+    seo: {
+      description:
+        "Free browser-based tool to add text or logo watermarks to images, or repair small blemishes with content-aware fill and a clone stamp — nothing is uploaded.",
+    },
+  },
 ] as const;
 
 export const tools: readonly ToolMeta[] = rawTools.map((t) =>

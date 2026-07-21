@@ -32,6 +32,9 @@ const componentLoaders: Record<
     () => import("@/islands/ImageMetadataRemoverTool"),
   ),
   "image-exif-viewer": lazy(() => import("@/islands/ImageExifViewerTool")),
+  "image-watermark-studio": lazy(
+    () => import("@/islands/ImageWatermarkStudioTool"),
+  ),
 };
 
 export function getToolIslandIds(): string[] {
