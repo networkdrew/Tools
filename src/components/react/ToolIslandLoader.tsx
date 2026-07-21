@@ -36,6 +36,7 @@ const componentLoaders: Record<
     () => import("@/islands/ImageWatermarkStudioTool"),
   ),
   "image-crop-resize": lazy(() => import("@/islands/ImageCropResizeTool")),
+  "pdf-merge-reorder": lazy(() => import("@/islands/PdfMergeTool")),
 };
 
 export function getToolIslandIds(): string[] {

@@ -562,6 +562,47 @@ const rawTools = [
         "Free image cropper and resizer that runs entirely in your browser. Crop with aspect-ratio presets, rotate, flip, and resize JPEG, PNG, WebP, BMP, or GIF images with nothing uploaded.",
     },
   },
+  {
+    id: "pdf-merge-reorder",
+    slug: "pdf-merge-reorder",
+    name: "PDF Merge & Reorder",
+    shortDescription:
+      "Combine multiple PDFs into one, reordering, rotating, and removing pages along the way.",
+    description: [
+      "Add multiple PDF files, drag them into the order you want, then expand any file to reorder, rotate, or remove its individual pages before merging everything into a single downloadable PDF.",
+      "Merging copies each page's original content directly using pdf-lib — an open-source PDF library — rather than rasterizing pages into images, so selectable text and vector graphics stay exactly as sharp as the source. Everything happens in your browser; files are never uploaded anywhere.",
+    ],
+    categoryId: "documents",
+    tags: [
+      "pdf merge",
+      "combine pdf",
+      "merge pdf files",
+      "reorder pdf pages",
+      "pdf page organizer",
+      "rotate pdf pages",
+    ],
+    aliases: [
+      "pdf combiner",
+      "join pdf files",
+      "pdf page reorder",
+      "merge pdf online",
+      "pdf organizer",
+    ],
+    executionMode: "browser",
+    featured: true,
+    addedAt: "2026-07-21",
+    relatedTools: [],
+    usageNotes: [
+      "Password-protected or encrypted PDFs can't be processed here — remove the password in a trusted PDF reader first, then try again.",
+      "Pages are copied directly from the original file (not re-rendered as images), so text stays selectable and quality is never lost, even after rotating.",
+      "Files up to 100 MB each are supported, up to 30 files and 2,000 total pages — comfortably more than a browser tab can process without freezing.",
+      "Undo and redo cover every reorder, rotation, and removal; Reset clears everything, including all loaded files, back to a blank start.",
+    ],
+    seo: {
+      description:
+        "Free PDF merge tool that runs entirely in your browser. Combine PDFs, drag to reorder files and pages, rotate or remove pages, with nothing ever uploaded.",
+    },
+  },
 ] as const;
 
 export const tools: readonly ToolMeta[] = rawTools.map((t) =>

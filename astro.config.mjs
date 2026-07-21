@@ -19,6 +19,21 @@ export default defineConfig({
     resolve: {
       alias: {
         "@": fileURLToPath(new URL("./src", import.meta.url)),
+        // pdf-lib's CJS build embeds its own bundled tslib helpers as a
+        // synthetic CommonJS module; Vite's CJS->ESM interop for that nested
+        // shape breaks ("Cannot destructure ... __toESM(...).default"). Its
+        // ESM build avoids that shape for pdf-lib itself, but still pulls in
+        // tslib's own UMD build, which hits the same interop bug one level
+        // down — so tslib is pointed at its own real-ESM build too.
+        "pdf-lib": fileURLToPath(
+          new URL("./node_modules/pdf-lib/es/index.js", import.meta.url),
+        ),
+        tslib: fileURLToPath(
+          new URL(
+            "./node_modules/pdf-lib/node_modules/tslib/tslib.es6.js",
+            import.meta.url,
+          ),
+        ),
       },
       // onnxruntime-web's default export condition bundles its own ~24-27 MB
       // .wasm runtime as a same-origin asset -- Cloudflare Workers rejects any

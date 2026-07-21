@@ -44,6 +44,13 @@ const rawCategories = [
     description: "Compress, resize, and convert images without uploading them.",
     icon: "image",
   },
+  {
+    id: "documents",
+    name: "Documents & PDFs",
+    description:
+      "Combine, reorder, and clean up documents without uploading them.",
+    icon: "file-text",
+  },
 ] as const satisfies readonly Category[];
 
 export const categories: readonly Category[] = rawCategories.map((c) =>
