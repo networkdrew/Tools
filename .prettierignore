@@ -1,8 +1,10 @@
 dist/
 .astro/
+.wrangler/
 node_modules/
 coverage/
 package-lock.json
+worker-configuration.d.ts
 
 # Vendored data (EFF Diceware word list) — kept byte-for-byte as sourced.
 src/lib/tools-logic/password/wordlist.json

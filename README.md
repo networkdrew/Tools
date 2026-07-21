@@ -21,44 +21,48 @@ The dev server prints a local URL (default `http://localhost:4321`).
 
 ## Scripts
 
-| Command                | What it does                                                      |
-| ---------------------- | ----------------------------------------------------------------- |
-| `npm run dev`          | Local dev server with hot reload                                  |
-| `npm run build`        | Production build to `dist/`                                       |
-| `npm run preview`      | Serve the production build locally                                |
-| `npm run check`        | Astro + TypeScript type checking                                  |
-| `npm run lint`         | ESLint (`--fix` variant: `npm run lint:fix`)                      |
-| `npm run format:check` | Prettier check (`npm run format` to write)                        |
-| `npm run test`         | Vitest — all unit and component tests, run once                   |
-| `npm run test:watch`   | Vitest in watch mode                                              |
-| `npm run verify`       | Runs format check, lint, type check, tests, and build in sequence |
+| Command                  | What it does                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------ |
+| `npm run dev`            | Local dev server with hot reload                                               |
+| `npm run build`          | Production build — static output to `dist/client/`                             |
+| `npm run preview`        | Build, then run the built output locally under `wrangler dev`                  |
+| `npm run check`          | Astro + TypeScript type checking                                               |
+| `npm run lint`           | ESLint (`--fix` variant: `npm run lint:fix`)                                   |
+| `npm run format:check`   | Prettier check (`npm run format` to write)                                     |
+| `npm run test`           | Vitest — all unit and component tests, run once                                |
+| `npm run test:watch`     | Vitest in watch mode                                                           |
+| `npm run verify`         | Runs format check, lint, type check, tests, and build in sequence              |
+| `npm run generate-types` | Regenerates `worker-configuration.d.ts` from `wrangler.jsonc`                  |
+| `npm run deploy`         | Build, then `wrangler deploy` (manual/local deploy — CI normally handles this) |
 
 Run `npm run verify` before considering any change finished.
+
+Note: `npm run build` writes static assets to `dist/client/` (not `dist/` directly) — the `@astrojs/cloudflare` adapter always splits output into `dist/client/` (what gets served) and `dist/server/` (Worker plumbing). See `docs/deployment.md`.
 
 ## Adding a new tool
 
 See `docs/adding-a-tool.md` — it's a fixed, five-step recipe (logic → UI → wire into the island loader → registry entry → verify), backed by tests that fail if a step is skipped.
 
-## Deployment (Cloudflare Pages)
+## Deployment (Cloudflare Workers)
 
-This is a fully static site (`output: "static"` in `astro.config.mjs`, no adapter, no server runtime) deployed to Cloudflare Pages from this GitHub repository. When creating the Cloudflare Pages project, use:
+The site is still fully static (`output: "static"`, no server-side logic, no environment variables or secrets required) — but it deploys via Cloudflare's Git-connected **Workers** integration, driven entirely by `wrangler.jsonc` in the repo root, rather than the classic Cloudflare Pages "build command / output directory" dashboard fields:
 
-| Setting                | Value                                                 |
-| ---------------------- | ----------------------------------------------------- |
-| Framework preset       | Astro                                                 |
-| Build command          | `npm run build`                                       |
-| Build output directory | `dist`                                                |
-| Root directory         | Repository root (`/`)                                 |
-| Production branch      | This repository's default branch (currently `master`) |
+| Setting            | Value                                                                               |
+| ------------------ | ----------------------------------------------------------------------------------- |
+| Framework / preset | Astro, deployed as a Worker (`@astrojs/cloudflare` adapter + `wrangler.jsonc`)      |
+| Build command      | `npm run build`                                                                     |
+| Assets directory   | `dist/client` (set in `wrangler.jsonc` → `assets.directory` — **not** plain `dist`) |
+| Root directory     | Repository root (`/`)                                                               |
+| Production branch  | This repository's default branch (currently `master`)                               |
 
-No environment variables or secrets are required to build or run this site. See `docs/deployment.md` for the full walkthrough, including connecting the `tools.drewcassidy.dev` custom domain without touching the existing `drewcassidy.dev` project.
+See `docs/deployment.md` for the full walkthrough — including why `dist/client` (not `dist`) matters, how to validate the config with `wrangler deploy --dry-run` before publishing, and connecting the `tools.drewcassidy.dev` custom domain without touching the existing `drewcassidy.dev` project.
 
 ## Documentation
 
 - `docs/architecture.md` — the tool registry, why tool islands are wired the way they are, directory layout, theming, search.
 - `docs/adding-a-tool.md` — the exact steps to add a tool.
 - `docs/roadmap.md` — what's shipped, what's next, what's deliberately out of scope.
-- `docs/deployment.md` — Cloudflare Pages project settings and custom domain setup.
+- `docs/deployment.md` — Cloudflare Workers deployment mechanics (`wrangler.jsonc`, the `dist/client` split) and custom domain setup.
 - `CLAUDE.md` — durable project rules for AI-assisted development in this repo.
 
 ## Privacy

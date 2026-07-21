@@ -2,7 +2,7 @@
 
 ## Stack and why
 
-- **Astro, static output (`output: "static"`).** Every page is pre-rendered HTML at build time — good for SEO, good for Cloudflare Pages, and it means most of the site ships zero JavaScript by default. Astro's "islands" model lets individual interactive widgets opt into hydration without turning the whole page into a client-rendered app.
+- **Astro, static output (`output: "static"`).** Every page is pre-rendered HTML at build time — good for SEO, good for Cloudflare, and it means most of the site ships zero JavaScript by default. Astro's "islands" model lets individual interactive widgets opt into hydration without turning the whole page into a client-rendered app. The `@astrojs/cloudflare` adapter and `wrangler.jsonc` are layered on top purely so Cloudflare's Workers platform can serve that static output (see `docs/deployment.md`) — there is no server-side application logic, and the adapter doesn't change anything about how tools work.
 - **React, only for islands.** The handful of components that need real interactivity (a tool's UI, the theme toggle, the search palette) are React components hydrated on the client. Everything else — layouts, headers, footers, cards — is plain `.astro` markup with no client JS cost.
 - **Tailwind CSS v4.** Utility classes plus a small set of CSS custom-property design tokens (`src/styles/global.css`) for light/dark theming. No component library — cards, buttons, and form fields are a handful of shared Tailwind class strings (`src/components/react/styles.ts`) plus a few Astro components, which is enough for this surface area.
 - **Zod.** Validates the tool and category registries at module-load time, so a malformed entry fails immediately and loudly instead of silently breaking a page.

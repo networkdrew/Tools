@@ -25,6 +25,7 @@ npm-debug.log*
 
 # wrangler
 .wrangler/
+worker-configuration.d.ts
 
 .dev.vars*
 !.dev.vars.example

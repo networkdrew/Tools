@@ -6,7 +6,7 @@ Build a trustworthy, privacy-first collection of free browser tools. Favor usefu
 
 ## Stack
 
-Astro (static output) + React islands for interactive tool UIs + TypeScript (strict) + Tailwind CSS v4 + Zod + Vitest + Testing Library. Package manager is npm. Deployed to Cloudflare Pages as a fully static site — see `docs/deployment.md`.
+Astro (static output) + React islands for interactive tool UIs + TypeScript (strict) + Tailwind CSS v4 + Zod + Vitest + Testing Library. Package manager is npm. Deployed as a fully static site to Cloudflare Workers (Git-connected, `wrangler.jsonc`-driven) — see `docs/deployment.md`. If `wrangler.jsonc`, `astro.config.mjs`'s adapter, or the build's `dist/client` split ever changes, re-verify a deploy actually serves pages, not just that `npm run build` succeeds.
 
 ## Project principles
 
