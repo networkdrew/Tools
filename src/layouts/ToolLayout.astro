@@ -1,0 +1,87 @@
+---
+import type { ToolMeta } from "@/lib/tools/schema";
+import { getCategory } from "@/lib/tools/categories";
+import { getRelatedTools } from "@/lib/tools/registry";
+import BaseLayout from "./BaseLayout.astro";
+import Icon from "@/components/astro/Icon.astro";
+import RelatedTools from "@/components/astro/RelatedTools.astro";
+
+interface Props {
+  tool: ToolMeta;
+  structuredData?: Record<string, unknown> | Record<string, unknown>[];
+}
+
+const { tool, structuredData } = Astro.props;
+const category = getCategory(tool.categoryId);
+const related = getRelatedTools(tool);
+---
+
+<BaseLayout
+  title={tool.name}
+  description={tool.seo.description ?? tool.shortDescription}
+  path={`/tools/${tool.slug}/`}
+  structuredData={structuredData}
+>
+  <div class="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+    <nav aria-label="Breadcrumb" class="text-text-muted mb-4 text-sm">
+      <a href="/tools/" class="hover:text-text hover:underline">All tools</a>
+      {
+        category && (
+          <>
+            {" "}
+            /{" "}
+            <a
+              href={`/categories/${category.id}/`}
+              class="hover:text-text hover:underline"
+            >
+              {category.name}
+            </a>
+          </>
+        )
+      }
+    </nav>
+
+    <h1 class="text-text text-2xl font-bold sm:text-3xl">{tool.name}</h1>
+
+    <div class="text-text-muted mt-3 flex flex-col gap-3">
+      {tool.description.map((paragraph) => <p>{paragraph}</p>)}
+    </div>
+
+    <div
+      class="border-success/30 bg-success/10 text-success mt-4 inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm"
+    >
+      <Icon name="shield-check" class="h-4 w-4" />
+      {
+        tool.executionMode === "browser"
+          ? "Runs entirely in your browser — nothing you enter is sent anywhere."
+          : "This tool sends data to a server to work — see the notes below for details."
+      }
+    </div>
+
+    <div class="border-border bg-bg-elevated mt-8 rounded-xl border p-4 sm:p-6">
+      <slot />
+    </div>
+
+    {
+      tool.usageNotes.length > 0 && (
+        <div class="mt-8">
+          <h2 class="text-text-muted text-sm font-semibold tracking-wide uppercase">
+            Usage notes
+          </h2>
+          <ul class="text-text-muted mt-2 flex flex-col gap-1.5 text-sm">
+            {tool.usageNotes.map((note) => (
+              <li class="flex gap-2">
+                <span aria-hidden="true">•</span>
+                {note}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )
+    }
+
+    <div class="mt-10">
+      <RelatedTools tools={related} />
+    </div>
+  </div>
+</BaseLayout>

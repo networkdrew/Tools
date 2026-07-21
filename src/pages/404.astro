@@ -1,0 +1,29 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { SearchPalette } from "@/components/react/SearchPalette";
+---
+
+<BaseLayout
+  title="Page not found"
+  description="This page doesn't exist."
+  path="/404/"
+>
+  <div
+    class="mx-auto flex max-w-xl flex-col items-center gap-4 px-4 py-20 text-center sm:px-6"
+  >
+    <p class="text-text-muted font-mono text-sm">404</p>
+    <h1 class="text-text text-2xl font-bold sm:text-3xl">
+      We couldn't find that page
+    </h1>
+    <p class="text-text-muted">
+      The tool or page you're looking for may have moved. Try searching for it,
+      or browse every tool below.
+    </p>
+    <div class="mt-2 w-full max-w-sm">
+      <SearchPalette client:load />
+    </div>
+    <a href="/tools/" class="text-accent mt-2 text-sm hover:underline"
+      >Browse all tools →</a
+    >
+  </div>
+</BaseLayout>

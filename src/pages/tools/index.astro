@@ -1,0 +1,22 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { ToolDirectory } from "@/components/react/ToolDirectory";
+---
+
+<BaseLayout
+  title="All tools"
+  description="Browse and search every free, browser-based tool, filterable by category."
+  path="/tools/"
+>
+  <div class="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+    <h1 class="text-text text-2xl font-bold sm:text-3xl">All tools</h1>
+    <p class="text-text-muted mt-2 max-w-2xl">
+      Search or filter to find what you need. Every tool here runs locally in
+      your browser unless its page says otherwise.
+    </p>
+
+    <div class="mt-8">
+      <ToolDirectory client:load />
+    </div>
+  </div>
+</BaseLayout>

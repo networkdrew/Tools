@@ -1,0 +1,36 @@
+---
+import type { GetStaticPaths } from "astro";
+import { tools } from "@/lib/tools/registry";
+import { SITE_URL } from "@/lib/config/site";
+import type { ToolMeta } from "@/lib/tools/schema";
+import ToolLayout from "@/layouts/ToolLayout.astro";
+import ToolIslandLoader from "@/components/react/ToolIslandLoader";
+
+export const getStaticPaths: GetStaticPaths = () =>
+  tools.map((tool) => ({ params: { slug: tool.slug }, props: { tool } }));
+
+interface Props {
+  tool: ToolMeta;
+}
+
+const { tool } = Astro.props;
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: tool.name,
+  description: tool.seo.description ?? tool.shortDescription,
+  url: `${SITE_URL}/tools/${tool.slug}/`,
+  applicationCategory: "UtilitiesApplication",
+  operatingSystem: "Any (runs in a web browser)",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+};
+---
+
+<ToolLayout tool={tool} structuredData={structuredData}>
+  <ToolIslandLoader toolId={tool.id} client:load />
+</ToolLayout>

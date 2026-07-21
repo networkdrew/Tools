@@ -1,0 +1,109 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/config/site";
+import { categories } from "@/lib/tools/categories";
+import { getFeaturedTools, getRecentTools } from "@/lib/tools/registry";
+import { SearchPalette } from "@/components/react/SearchPalette";
+import CategoryCard from "@/components/astro/CategoryCard.astro";
+import ToolCard from "@/components/astro/ToolCard.astro";
+import Icon from "@/components/astro/Icon.astro";
+
+const featured = getFeaturedTools();
+const recent = getRecentTools(4);
+---
+
+<BaseLayout title={SITE_NAME} description={SITE_DESCRIPTION} path="/">
+  <section class="border-border bg-bg border-b">
+    <div class="mx-auto max-w-3xl px-4 py-12 text-center sm:px-6 sm:py-16">
+      <h1 class="text-text text-3xl font-bold sm:text-4xl">
+        Fast, free, browser-based tools
+      </h1>
+      <p class="text-text-muted mx-auto mt-3 max-w-xl">
+        Format, generate, and convert everyday data without installing anything,
+        creating an account, or sending your files to a server.
+      </p>
+      <div class="mx-auto mt-6 max-w-md">
+        <SearchPalette client:load />
+      </div>
+    </div>
+  </section>
+
+  <section
+    id="categories"
+    aria-labelledby="categories-heading"
+    class="mx-auto max-w-6xl px-4 py-12 sm:px-6"
+  >
+    <h2 id="categories-heading" class="text-text text-lg font-semibold">
+      Browse by category
+    </h2>
+    <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {categories.map((category) => <CategoryCard category={category} />)}
+    </div>
+  </section>
+
+  {
+    featured.length > 0 && (
+      <section
+        aria-labelledby="featured-heading"
+        class="border-border bg-bg-elevated border-t"
+      >
+        <div class="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+          <h2 id="featured-heading" class="text-text text-lg font-semibold">
+            Featured tools
+          </h2>
+          <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {featured.map((tool) => (
+              <ToolCard tool={tool} />
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    recent.length > 0 && (
+      <section
+        aria-labelledby="recent-heading"
+        class="mx-auto max-w-6xl px-4 py-12 sm:px-6"
+      >
+        <div class="flex items-center justify-between">
+          <h2 id="recent-heading" class="text-text text-lg font-semibold">
+            Recently added
+          </h2>
+          <a href="/tools/" class="text-accent text-sm hover:underline">
+            View all →
+          </a>
+        </div>
+        <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {recent.map((tool) => (
+            <ToolCard tool={tool} variant="compact" />
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  <section
+    aria-labelledby="privacy-heading"
+    class="border-border bg-bg-elevated border-t"
+  >
+    <div class="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+      <h2
+        id="privacy-heading"
+        class="text-text flex items-center gap-2 text-lg font-semibold"
+      >
+        <Icon name="shield-check" class="text-success h-5 w-5" />
+        Your data stays on your device
+      </h2>
+      <p class="text-text-muted mt-3">
+        Every tool marked "runs in your browser" reads and processes your input
+        locally using standard web platform APIs — nothing is uploaded to a
+        server. There's no account, no tracking of what you paste in, and
+        closing the tab clears everything. If a future tool ever needs a server
+        for something a browser genuinely can't do, its page will say so
+        explicitly before you use it.
+      </p>
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,83 @@
+---
+import { NAV_LINKS, SITE_NAME } from "@/lib/config/site";
+import { categories } from "@/lib/tools/categories";
+import { SearchPalette } from "@/components/react/SearchPalette";
+import { ThemeToggle } from "@/components/react/ThemeToggle";
+---
+
+<header class="border-border bg-bg/95 sticky top-0 z-40 border-b backdrop-blur">
+  <div
+    class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6"
+  >
+    <a href="/" class="text-text flex items-center gap-2 text-lg font-bold">
+      <span
+        class="bg-accent text-accent-contrast flex h-7 w-7 items-center justify-center rounded-md font-mono text-sm"
+        aria-hidden="true">{"{}"}</span
+      >
+      <span class="hidden sm:inline">{SITE_NAME}</span>
+    </a>
+
+    <nav aria-label="Primary" class="hidden items-center gap-1 md:flex">
+      {
+        NAV_LINKS.map((link) => (
+          <a
+            href={link.href}
+            class="text-text-muted hover:bg-bg-sunken hover:text-text rounded-md px-3 py-2 text-sm font-medium transition-colors"
+          >
+            {link.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <div class="ml-auto max-w-xs flex-1 sm:flex-none">
+      <SearchPalette client:load />
+    </div>
+
+    <ThemeToggle client:only="react" />
+
+    <details class="relative md:hidden">
+      <summary
+        class="text-text-muted hover:bg-bg-sunken flex h-9 w-9 list-none items-center justify-center rounded-md [&::-webkit-details-marker]:hidden"
+        aria-label="Menu"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          class="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </summary>
+      <nav
+        aria-label="Primary"
+        class="border-border bg-bg-elevated absolute top-full right-0 mt-2 flex w-56 flex-col gap-1 rounded-lg border p-2 shadow-xl"
+      >
+        {
+          NAV_LINKS.map((link) => (
+            <a
+              href={link.href}
+              class="text-text hover:bg-bg-sunken rounded-md px-3 py-2 text-sm font-medium"
+            >
+              {link.label}
+            </a>
+          ))
+        }
+        <div class="border-border my-1 border-t"></div>
+        {
+          categories.map((category) => (
+            <a
+              href={`/categories/${category.id}/`}
+              class="text-text-muted hover:bg-bg-sunken hover:text-text rounded-md px-3 py-2 text-sm"
+            >
+              {category.name}
+            </a>
+          ))
+        }
+      </nav>
+    </details>
+  </div>
+</header>

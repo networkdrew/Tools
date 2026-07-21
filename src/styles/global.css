@@ -1,0 +1,142 @@
+@import "tailwindcss";
+@import "@fontsource-variable/manrope";
+@import "@fontsource-variable/jetbrains-mono";
+
+/* Manual theme toggle overrides prefers-color-scheme via [data-theme] on <html>,
+   set synchronously by the inline script in BaseLayout to avoid a flash. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root {
+  --font-sans:
+    "Manrope Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    sans-serif;
+  --font-mono:
+    "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", Menlo, Consolas,
+    monospace;
+
+  --color-bg: #f6f5f2;
+  --color-bg-elevated: #ffffff;
+  --color-bg-sunken: #ece9e2;
+  --color-border: #e2e0da;
+  --color-border-strong: #cbc8bf;
+  --color-text: #1b1a17;
+  --color-text-muted: #6b6a63;
+  --color-accent: #a8410f;
+  --color-accent-hover: #8f3608;
+  --color-accent-contrast: #ffffff;
+  --color-danger: #ad2b22;
+  --color-success: #186b3f;
+  --shadow-color: 30 25 15;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: #0b0c10;
+    --color-bg-elevated: #15171d;
+    --color-bg-sunken: #08090c;
+    --color-border: #23262e;
+    --color-border-strong: #333640;
+    --color-text: #eceae4;
+    --color-text-muted: #9b9a92;
+    --color-accent: #f2a154;
+    --color-accent-hover: #f7b672;
+    --color-accent-contrast: #0b0c10;
+    --color-danger: #ff8a7a;
+    --color-success: #4fd58a;
+    --shadow-color: 0 0 0;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-bg: #0b0c10;
+  --color-bg-elevated: #15171d;
+  --color-bg-sunken: #08090c;
+  --color-border: #23262e;
+  --color-border-strong: #333640;
+  --color-text: #eceae4;
+  --color-text-muted: #9b9a92;
+  --color-accent: #f2a154;
+  --color-accent-hover: #f7b672;
+  --color-accent-contrast: #0b0c10;
+  --color-danger: #ff8a7a;
+  --color-success: #4fd58a;
+  --shadow-color: 0 0 0;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --color-bg: var(--color-bg);
+  --color-bg-elevated: var(--color-bg-elevated);
+  --color-bg-sunken: var(--color-bg-sunken);
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+  --color-accent: var(--color-accent);
+  --color-accent-hover: var(--color-accent-hover);
+  --color-accent-contrast: var(--color-accent-contrast);
+  --color-danger: var(--color-danger);
+  --color-success: var(--color-success);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    font-family: var(--font-sans);
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    min-height: 100svh;
+  }
+
+  ::selection {
+    background-color: var(--color-accent);
+    color: var(--color-accent-contrast);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  code,
+  pre,
+  kbd,
+  samp {
+    font-family: var(--font-mono);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+}

@@ -1,0 +1,69 @@
+---
+import type { ToolMeta } from "@/lib/tools/schema";
+import { getCategory } from "@/lib/tools/categories";
+import { isNewTool } from "@/lib/tools/registry";
+import Icon, { type IconName } from "./Icon.astro";
+
+interface Props {
+  tool: ToolMeta;
+  variant?: "default" | "compact";
+}
+
+const { tool, variant = "default" } = Astro.props;
+const category = getCategory(tool.categoryId);
+const isNew = isNewTool(tool);
+---
+
+{
+  variant === "compact" ? (
+    <a
+      href={`/tools/${tool.slug}/`}
+      class="border-border bg-bg-elevated hover:border-accent flex items-center gap-3 rounded-md border p-3 transition-colors"
+    >
+      {category && (
+        <span class="bg-bg-sunken text-text-muted flex h-8 w-8 shrink-0 items-center justify-center rounded-md">
+          <Icon name={category.icon as IconName} class="h-4 w-4" />
+        </span>
+      )}
+      <span class="min-w-0 flex-1">
+        <span class="text-text block truncate text-sm font-medium">
+          {tool.name}
+        </span>
+        <span class="text-text-muted block truncate text-xs">
+          {category?.name}
+        </span>
+      </span>
+      {isNew && (
+        <span class="bg-accent/10 text-accent shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
+          New
+        </span>
+      )}
+    </a>
+  ) : (
+    <a
+      href={`/tools/${tool.slug}/`}
+      class="group border-border bg-bg-elevated hover:border-accent flex flex-col gap-3 rounded-lg border p-5 transition-colors"
+    >
+      <div class="flex items-start justify-between gap-2">
+        {category && (
+          <span class="bg-bg-sunken text-text-muted group-hover:text-accent flex h-9 w-9 shrink-0 items-center justify-center rounded-md">
+            <Icon name={category.icon as IconName} class="h-4.5 w-4.5" />
+          </span>
+        )}
+        {isNew && (
+          <span class="bg-accent/10 text-accent rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
+            New
+          </span>
+        )}
+      </div>
+      <div>
+        <h3 class="text-text font-semibold">{tool.name}</h3>
+        <p class="text-text-muted mt-1 text-sm">{tool.shortDescription}</p>
+      </div>
+      <div class="text-text-muted mt-auto flex items-center gap-1.5 pt-2 text-xs">
+        <Icon name="shield-check" class="h-3.5 w-3.5" />
+        Runs in your browser
+      </div>
+    </a>
+  )
+}

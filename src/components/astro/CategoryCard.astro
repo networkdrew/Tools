@@ -1,0 +1,30 @@
+---
+import type { Category } from "@/lib/tools/schema";
+import { getToolsByCategory } from "@/lib/tools/registry";
+import Icon, { type IconName } from "./Icon.astro";
+
+interface Props {
+  category: Category;
+}
+
+const { category } = Astro.props;
+const count = getToolsByCategory(category.id).length;
+---
+
+<a
+  href={`/categories/${category.id}/`}
+  class="group border-border bg-bg-elevated hover:border-accent flex flex-col gap-3 rounded-lg border p-5 transition-colors"
+>
+  <span
+    class="bg-bg-sunken text-text-muted group-hover:text-accent flex h-10 w-10 items-center justify-center rounded-md"
+  >
+    <Icon name={category.icon as IconName} class="h-5 w-5" />
+  </span>
+  <div>
+    <h3 class="text-text font-semibold">{category.name}</h3>
+    <p class="text-text-muted mt-1 text-sm">{category.description}</p>
+  </div>
+  <p class="text-text-muted mt-auto text-xs">
+    {`${count} ${count === 1 ? "tool" : "tools"}`}
+  </p>
+</a>

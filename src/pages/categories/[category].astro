@@ -1,0 +1,43 @@
+---
+import type { GetStaticPaths } from "astro";
+import { categories } from "@/lib/tools/categories";
+import { getToolsByCategory } from "@/lib/tools/registry";
+import type { Category } from "@/lib/tools/schema";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import ToolCard from "@/components/astro/ToolCard.astro";
+
+export const getStaticPaths: GetStaticPaths = () =>
+  categories.map((category) => ({
+    params: { category: category.id },
+    props: { category },
+  }));
+
+interface Props {
+  category: Category;
+}
+
+const { category } = Astro.props;
+const categoryTools = getToolsByCategory(category.id);
+---
+
+<BaseLayout
+  title={category.name}
+  description={category.description}
+  path={`/categories/${category.id}/`}
+>
+  <div class="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+    <a
+      href="/tools/"
+      class="text-text-muted hover:text-text text-sm hover:underline"
+      >← All tools</a
+    >
+    <h1 class="text-text mt-2 text-2xl font-bold sm:text-3xl">
+      {category.name}
+    </h1>
+    <p class="text-text-muted mt-2 max-w-2xl">{category.description}</p>
+
+    <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {categoryTools.map((tool) => <ToolCard tool={tool} />)}
+    </div>
+  </div>
+</BaseLayout>
