@@ -404,7 +404,11 @@ const rawTools = [
     executionMode: "browser",
     featured: false,
     addedAt: "2026-07-21",
-    relatedTools: ["image-compressor", "image-format-converter"],
+    relatedTools: [
+      "image-exif-viewer",
+      "image-compressor",
+      "image-format-converter",
+    ],
     usageNotes: [
       "Metadata is removed by redrawing the image on canvas and re-encoding it, not by editing bytes directly — this strips all embedded metadata, but means the output isn't a byte-identical copy of the original minus metadata.",
       "JPEG, PNG, and WebP are re-encoded back to their original format; BMP and GIF are saved as PNG instead, since browsers can't re-encode canvas output back to BMP or GIF and doing so is required to guarantee metadata removal. Animated GIF and WebP files are also flattened to a single frame in the process.",
@@ -414,6 +418,51 @@ const rawTools = [
     seo: {
       description:
         "Free image metadata remover that strips EXIF, GPS, and other metadata from JPEG, PNG, WebP, BMP, and GIF images entirely in your browser — nothing is uploaded.",
+    },
+  },
+  {
+    id: "image-exif-viewer",
+    slug: "image-exif-viewer",
+    name: "Image EXIF Viewer",
+    shortDescription:
+      "Inspect camera, capture, and GPS metadata embedded in JPEG, PNG, and WebP images.",
+    description: [
+      "Choose a JPEG, PNG, or WebP image to see its embedded EXIF metadata: camera make and model, lens, exposure settings, capture date, orientation, color profile, and GPS location when present.",
+      "Parsing happens entirely in your browser by reading the file's own bytes — the image is never uploaded, and nothing is shown that isn't actually present in the file.",
+    ],
+    categoryId: "images-media",
+    tags: [
+      "exif viewer",
+      "image metadata",
+      "photo metadata",
+      "gps data",
+      "camera info",
+      "exif data",
+    ],
+    aliases: [
+      "exif reader",
+      "view image metadata",
+      "photo info viewer",
+      "check gps location photo",
+      "metadata viewer",
+    ],
+    executionMode: "browser",
+    featured: false,
+    addedAt: "2026-07-21",
+    relatedTools: [
+      "image-metadata-remover",
+      "image-compressor",
+      "image-format-converter",
+    ],
+    usageNotes: [
+      "Only JPEG, PNG, and WebP are supported — these are the formats that commonly carry EXIF data in a standard, parseable location.",
+      "Fields are only shown when they're actually present in the file; nothing is inferred or guessed, and a clear message appears when no EXIF metadata is found at all.",
+      "GPS coordinates, when present, are labeled as sensitive location data. The optional map link opens OpenStreetMap only when you click it — it's never loaded automatically, and the image itself is never sent anywhere.",
+      "Use the Image Metadata Remover afterward if you want to strip this metadata before sharing the file.",
+    ],
+    seo: {
+      description:
+        "Free EXIF viewer that reads camera, capture, orientation, color profile, and GPS metadata from JPEG, PNG, and WebP images entirely in your browser.",
     },
   },
 ] as const;
