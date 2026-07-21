@@ -27,7 +27,7 @@ const rawTools = [
     executionMode: "browser",
     featured: true,
     addedAt: "2026-07-20",
-    relatedTools: ["base64-encoder-decoder"],
+    relatedTools: ["base64-encoder-decoder", "csv-json-converter"],
     usageNotes: [
       "Formatting uses 2-space indentation; minifying removes all non-essential whitespace.",
       "Syntax errors show the line and column reported by the parser so you can jump straight to the problem.",
@@ -289,6 +289,45 @@ const rawTools = [
     seo: {
       description:
         "Free image compressor that runs entirely in your browser. Shrink and resize JPEG, PNG, and WebP images with nothing ever uploaded.",
+    },
+  },
+  {
+    id: "csv-json-converter",
+    slug: "csv-json-converter",
+    name: "CSV ↔ JSON Converter",
+    shortDescription:
+      "Convert CSV to JSON or JSON to CSV, with custom delimiters and header handling.",
+    description: [
+      "Paste CSV to turn it into an array of JSON objects (or arrays, if there's no header row), or paste a JSON array of objects to turn it into a CSV table.",
+      "Parsing and conversion happen entirely in your browser — nothing you paste is uploaded or sent anywhere.",
+    ],
+    categoryId: "developer-tools",
+    tags: [
+      "csv",
+      "json",
+      "converter",
+      "csv to json",
+      "json to csv",
+      "spreadsheet",
+    ],
+    aliases: [
+      "csv converter",
+      "csv parser",
+      "json to csv converter",
+      "csv to json converter",
+    ],
+    executionMode: "browser",
+    featured: false,
+    addedAt: "2026-07-20",
+    relatedTools: ["json-formatter"],
+    usageNotes: [
+      'Quoted fields, embedded commas, and escaped quotes ("") are handled per the standard CSV format — not just simple comma-splitting.',
+      "Comma, semicolon, and tab delimiters are all supported for both directions.",
+      "When converting JSON to CSV, columns are the union of every object's keys in first-seen order; missing fields become empty cells, and nested objects/arrays are stringified into a single cell.",
+    ],
+    seo: {
+      description:
+        "Free CSV to JSON and JSON to CSV converter that runs entirely in your browser. Handles quoted fields, custom delimiters, and headerless CSV.",
     },
   },
 ] as const;

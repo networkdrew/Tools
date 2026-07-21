@@ -24,6 +24,7 @@ const componentLoaders: Record<
   "qr-code-generator": lazy(() => import("@/islands/QrCodeGeneratorTool")),
   "color-contrast-checker": lazy(() => import("@/islands/ColorContrastTool")),
   "image-compressor": lazy(() => import("@/islands/ImageCompressorTool")),
+  "csv-json-converter": lazy(() => import("@/islands/CsvJsonConverterTool")),
 };
 
 export function getToolIslandIds(): string[] {
