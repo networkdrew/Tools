@@ -3,6 +3,42 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ImageWatermarkStudioTool from "./ImageWatermarkStudioTool";
 
+vi.mock(
+  "@/islands/image-watermark-studio/aiModelLoader",
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import("./image-watermark-studio/aiModelLoader")
+      >();
+    return {
+      ...actual,
+      fetchModelBytes: vi.fn(async (onProgress: (p: unknown) => void) => {
+        onProgress({ loadedBytes: 10, totalBytes: 10, fromCache: false });
+        return new ArrayBuffer(10);
+      }),
+      createInpaintSession: vi.fn(async () => ({
+        session: { run: vi.fn(), outputNames: ["output"] },
+        ort: { Tensor: class {} },
+        backend: "wasm" as const,
+      })),
+    };
+  },
+);
+
+vi.mock("@/islands/image-watermark-studio/aiRunner", () => ({
+  runAIInstances: vi.fn(
+    async (image: {
+      data: Uint8ClampedArray;
+      width: number;
+      height: number;
+    }) => ({
+      data: new Uint8ClampedArray(image.data),
+      width: image.width,
+      height: image.height,
+    }),
+  ),
+}));
+
 function fakeImageFile(
   name = "photo.png",
   type = "image/png",
@@ -68,6 +104,7 @@ function makeMockCtx() {
     getImageData: vi.fn(
       (_x: number, _y: number, w: number, h: number) => new FakeImageData(w, h),
     ),
+    createImageData: vi.fn((w: number, h: number) => new FakeImageData(w, h)),
     putImageData: vi.fn(),
   };
 }
@@ -169,7 +206,7 @@ describe("ImageWatermarkStudioTool", () => {
     expect(screen.getByRole("button", { name: "Undo" })).toBeDisabled();
   });
 
-  it("records a repair stroke as an undoable operation", async () => {
+  it("records a Quick repair stroke as an undoable operation", async () => {
     mockCanvasSupport();
     const user = userEvent.setup();
     render(<ImageWatermarkStudioTool />);
@@ -177,6 +214,7 @@ describe("ImageWatermarkStudioTool", () => {
     await user.click(
       await screen.findByRole("tab", { name: "Remove / repair" }),
     );
+    await user.click(screen.getByRole("tab", { name: "Quick repair" }));
 
     const canvas = screen.getByRole("img", { name: /repair preview/i });
     fireEvent.pointerDown(canvas, { clientX: 50, clientY: 50, pointerId: 1 });
@@ -190,6 +228,76 @@ describe("ImageWatermarkStudioTool", () => {
 
     await user.click(screen.getByRole("button", { name: "Undo" }));
     expect(screen.getByRole("button", { name: "Undo" })).toBeDisabled();
+  });
+
+  it("defaults repair mode to AI removal and lets the user build/undo/clear a selection before a model is loaded", async () => {
+    mockCanvasSupport();
+    const user = userEvent.setup();
+    render(<ImageWatermarkStudioTool />);
+    await user.upload(screen.getByLabelText("Image file"), fakeImageFile());
+    await user.click(
+      await screen.findByRole("tab", { name: "Remove / repair" }),
+    );
+
+    expect(
+      screen.getByRole("tab", { name: "AI removal (recommended)" }),
+    ).toHaveAttribute("aria-selected", "true");
+    expect(
+      screen.getByRole("button", { name: /load ai model/i }),
+    ).toBeInTheDocument();
+    // Remove is disabled until a model is loaded, even with a selection.
+    const removeButton = screen.getByRole("button", { name: "Remove" });
+    expect(removeButton).toBeDisabled();
+
+    const canvas = screen.getByRole("img", { name: /repair preview/i });
+    fireEvent.pointerDown(canvas, { clientX: 50, clientY: 50, pointerId: 1 });
+    fireEvent.pointerMove(canvas, { clientX: 55, clientY: 55, pointerId: 1 });
+    fireEvent.pointerUp(canvas, { clientX: 55, clientY: 55, pointerId: 1 });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Undo selection" }),
+      ).toBeEnabled(),
+    );
+    // Still disabled: a selection alone isn't enough, the AI model must be loaded too.
+    expect(removeButton).toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: "Undo selection" }));
+    expect(
+      screen.getByRole("button", { name: "Undo selection" }),
+    ).toBeDisabled();
+    expect(removeButton).toBeDisabled();
+  });
+
+  it("loads the AI model, runs Remove on a selection, and records it as an undoable edit", async () => {
+    mockCanvasSupport();
+    const user = userEvent.setup();
+    render(<ImageWatermarkStudioTool />);
+    await user.upload(screen.getByLabelText("Image file"), fakeImageFile());
+    await user.click(
+      await screen.findByRole("tab", { name: "Remove / repair" }),
+    );
+
+    await user.click(screen.getByRole("button", { name: /load ai model/i }));
+    await screen.findByText(/AI model ready/i);
+
+    const canvas = screen.getByRole("img", { name: /repair preview/i });
+    fireEvent.pointerDown(canvas, { clientX: 50, clientY: 50, pointerId: 1 });
+    fireEvent.pointerMove(canvas, { clientX: 55, clientY: 55, pointerId: 1 });
+    fireEvent.pointerUp(canvas, { clientX: 55, clientY: 55, pointerId: 1 });
+
+    const removeButton = await screen.findByRole("button", { name: "Remove" });
+    await waitFor(() => expect(removeButton).toBeEnabled());
+    await user.click(removeButton);
+
+    await waitFor(() =>
+      expect(screen.getByText("1 repair edit")).toBeInTheDocument(),
+    );
+    expect(screen.getByRole("button", { name: "Undo" })).toBeEnabled();
+    // The selection is cleared after a successful pass, ready for another.
+    expect(
+      screen.getByRole("button", { name: "Undo selection" }),
+    ).toBeDisabled();
   });
 
   it("renders a full-resolution result and downloads it", async () => {

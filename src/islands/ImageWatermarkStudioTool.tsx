@@ -51,6 +51,11 @@ import {
   outputFilename,
   validateImageFile,
 } from "@/lib/tools-logic/image-watermark/file";
+import {
+  rasterizeSelectionPreview,
+  resolveAddInstances,
+  type PendingStroke,
+} from "@/lib/tools-logic/image-watermark/aiSelection";
 import { downloadBlob } from "@/lib/tools-logic/download";
 import {
   decodeImageFile,
@@ -59,6 +64,16 @@ import {
   toImageData,
 } from "@/islands/image-watermark-studio/decode";
 import { WatermarkOverlay } from "@/islands/image-watermark-studio/WatermarkOverlay";
+import {
+  createInpaintSession,
+  fetchModelBytes,
+  hasLowDeviceMemory,
+  MODEL_APPROX_BYTES,
+  MODEL_LICENSE,
+  type Backend,
+  type LoadedSession,
+} from "@/islands/image-watermark-studio/aiModelLoader";
+import { runAIInstances } from "@/islands/image-watermark-studio/aiRunner";
 import { StatusMessage } from "@/components/react/StatusMessage";
 import {
   buttonGhost,
@@ -72,7 +87,23 @@ import {
 type Mode = "watermark" | "repair";
 type WatermarkType = "text" | "image";
 type RepairTool = "brush" | "box" | "lasso" | "clone";
+type RepairMethod = "ai" | "quick";
+type AISelectionTool = "add-brush" | "add-box" | "erase";
 type OutputFormat = "image/png" | "image/jpeg" | "image/webp";
+
+/** One committed repair action: either a Quick-repair operation (applied instantly, cheap to replay) or a completed AI-removal pass (expensive, so its working-resolution result is baked in for fast preview and its source geometry is kept to replay at full resolution on export). */
+type Commit =
+  | { id: string; kind: "quick"; op: RepairOperation }
+  | {
+      id: string;
+      kind: "ai";
+      instances: RepairOperation[];
+      previewSnapshot: ImageData;
+    };
+
+/** AI-commit snapshots hold a full working-resolution image, so this history is capped lower than the lightweight quick-op history. */
+const COMMIT_HISTORY_LIMIT = 15;
+const SELECTION_HISTORY_LIMIT = 30;
 
 interface TextSettings {
   text: string;
@@ -171,13 +202,16 @@ export default function ImageWatermarkStudioTool() {
   const [style, setStyle] = useState<WatermarkStyle>(DEFAULT_STYLE);
 
   // --- repair mode state ---
+  const [repairMethod, setRepairMethod] = useState<RepairMethod>("ai");
   const [repairTool, setRepairTool] = useState<RepairTool>("brush");
+  const [aiSelectionTool, setAiSelectionTool] =
+    useState<AISelectionTool>("add-brush");
   const [brushRadiusPercent, setBrushRadiusPercent] = useState(
     DEFAULT_BRUSH_RADIUS_PERCENT,
   );
   const [featherPercent, setFeatherPercent] = useState(DEFAULT_FEATHER_PERCENT);
-  const [opsHistory, setOpsHistory] = useState<HistoryState<RepairOperation[]>>(
-    () => createHistory<RepairOperation[]>([]),
+  const [commitsHistory, setCommitsHistory] = useState<HistoryState<Commit[]>>(
+    () => createHistory<Commit[]>([]),
   );
   const [activeStroke, setActiveStroke] = useState<Stroke | null>(null);
   const [settingCloneSource, setSettingCloneSource] = useState(false);
@@ -186,6 +220,27 @@ export default function ImageWatermarkStudioTool() {
   );
   const [showOriginal, setShowOriginal] = useState(false);
   const cloneOffsetRef = useRef<NormPoint | null>(null);
+
+  // --- AI removal state ---
+  const [aiSession, setAiSession] = useState<LoadedSession | null>(null);
+  const [aiBackend, setAiBackend] = useState<Backend | null>(null);
+  const [isLoadingModel, setIsLoadingModel] = useState(false);
+  const [modelLoadProgress, setModelLoadProgress] = useState<{
+    loadedBytes: number;
+    totalBytes: number;
+    fromCache: boolean;
+  } | null>(null);
+  const [modelLoadError, setModelLoadError] = useState<string | null>(null);
+  const [pendingHistory, setPendingHistory] = useState<
+    HistoryState<PendingStroke[]>
+  >(() => createHistory<PendingStroke[]>([]));
+  const [isRemoving, setIsRemoving] = useState(false);
+  const [removeProgress, setRemoveProgress] = useState<{
+    instance: number;
+    instanceCount: number;
+  } | null>(null);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+  const aiSessionRef = useRef<LoadedSession | null>(null);
 
   // --- export state ---
   const [outputFormat, setOutputFormat] = useState<OutputFormat>("image/png");
@@ -239,6 +294,8 @@ export default function ImageWatermarkStudioTool() {
     resultUrl: result?.url ?? null,
   };
 
+  aiSessionRef.current = aiSession;
+
   useEffect(() => {
     return () => {
       latestResourcesRef.current.sourceBitmap?.close();
@@ -246,16 +303,49 @@ export default function ImageWatermarkStudioTool() {
       if (latestResourcesRef.current.resultUrl) {
         URL.revokeObjectURL(latestResourcesRef.current.resultUrl);
       }
+      aiSessionRef.current?.session.release?.();
     };
   }, []);
 
-  const ops = opsHistory.present;
+  const commits = commitsHistory.present;
+  const pendingStrokes = pendingHistory.present;
 
   const composedWorkingImageData = useMemo<ImageData | null>(() => {
     if (!baseWorkingImageData) return null;
-    if (ops.length === 0) return baseWorkingImageData;
-    return toImageData(applyRepairOperations(baseWorkingImageData, ops));
-  }, [baseWorkingImageData, ops]);
+    let start = baseWorkingImageData;
+    let quickOpsSince: RepairOperation[] = [];
+    for (const commit of commits) {
+      if (commit.kind === "ai") {
+        start = commit.previewSnapshot;
+        quickOpsSince = [];
+      } else {
+        quickOpsSince.push(commit.op);
+      }
+    }
+    if (quickOpsSince.length === 0) return start;
+    return toImageData(applyRepairOperations(start, quickOpsSince));
+  }, [baseWorkingImageData, commits]);
+
+  const pendingSelectionMask = useMemo(() => {
+    if (!workingSize || pendingStrokes.length === 0) return null;
+    return rasterizeSelectionPreview(
+      pendingStrokes,
+      workingSize.width,
+      workingSize.height,
+    );
+  }, [pendingStrokes, workingSize]);
+
+  const lowMemoryDevice = useMemo(() => hasLowDeviceMemory(), []);
+  const modelLoadPercent =
+    modelLoadProgress && modelLoadProgress.totalBytes > 0
+      ? Math.min(
+          100,
+          Math.round(
+            (modelLoadProgress.loadedBytes / modelLoadProgress.totalBytes) *
+              100,
+          ),
+        )
+      : 0;
 
   const activeContent: WatermarkContent | null = useMemo(() => {
     if (watermarkType === "text") {
@@ -326,12 +416,20 @@ export default function ImageWatermarkStudioTool() {
         ? baseWorkingImageData
         : composedWorkingImageData;
       if (imageData) ctx.putImageData(imageData, 0, 0);
+      if (!showOriginal && repairMethod === "ai" && pendingSelectionMask) {
+        paintSelectionOverlay(ctx, pendingSelectionMask);
+      }
       if (activeStroke && !showOriginal) {
+        const variant =
+          repairMethod === "ai" && aiSelectionTool === "erase"
+            ? "erase"
+            : "add";
         paintStrokePreview(
           ctx,
           activeStroke,
           workingSize,
           brushRadiusPercent / 100,
+          variant,
         );
       }
     } else {
@@ -354,17 +452,45 @@ export default function ImageWatermarkStudioTool() {
     activeContent,
     style,
     layout,
+    repairMethod,
+    aiSelectionTool,
+    pendingSelectionMask,
   ]);
+
+  function paintSelectionOverlay(
+    ctx: CanvasRenderingContext2D,
+    selection: NonNullable<typeof pendingSelectionMask>,
+  ) {
+    const { mask, bbox } = selection;
+    if (bbox.width <= 0 || bbox.height <= 0) return;
+    const patch = ctx.createImageData(bbox.width, bbox.height);
+    for (let i = 0; i < mask.length; i++) {
+      const weight = mask[i] ?? 0;
+      patch.data[i * 4] = 59;
+      patch.data[i * 4 + 1] = 130;
+      patch.data[i * 4 + 2] = 246;
+      patch.data[i * 4 + 3] = Math.round(weight * 0.55);
+    }
+    const overlayCanvas = document.createElement("canvas");
+    overlayCanvas.width = bbox.width;
+    overlayCanvas.height = bbox.height;
+    const overlayCtx = overlayCanvas.getContext("2d");
+    if (!overlayCtx) return;
+    overlayCtx.putImageData(patch, 0, 0);
+    ctx.drawImage(overlayCanvas, bbox.x, bbox.y);
+  }
 
   function paintStrokePreview(
     ctx: CanvasRenderingContext2D,
     stroke: Stroke,
     size: Size,
     radiusFraction: number,
+    variant: "add" | "erase" = "add",
   ) {
     if (stroke.points.length === 0) return;
+    const color = variant === "erase" ? "220,38,38" : "59,130,246";
     ctx.save();
-    ctx.strokeStyle = "rgba(59,130,246,0.8)";
+    ctx.strokeStyle = `rgba(${color},0.8)`;
     ctx.lineWidth = Math.max(1, radiusFraction * size.width * 2);
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -377,7 +503,7 @@ export default function ImageWatermarkStudioTool() {
         size,
       );
       ctx.lineWidth = 1;
-      ctx.strokeStyle = "rgba(59,130,246,0.9)";
+      ctx.strokeStyle = `rgba(${color},0.9)`;
       ctx.strokeRect(
         Math.min(first.x, last.x),
         Math.min(first.y, last.y),
@@ -451,7 +577,8 @@ export default function ImageWatermarkStudioTool() {
     setOriginalDimensions(dims);
     setWorkingSize(working);
     setBaseWorkingImageData(imageData);
-    setOpsHistory(createHistory<RepairOperation[]>([]));
+    setCommitsHistory(createHistory<Commit[]>([]));
+    setPendingHistory(createHistory<PendingStroke[]>([]));
     setLayout(DEFAULT_LAYOUT);
     setZoom(1);
     setPan({ x: 0, y: 0 });
@@ -504,6 +631,12 @@ export default function ImageWatermarkStudioTool() {
 
     const point = toNormalized(getCanvasPoint(e), workingSize);
 
+    if (repairMethod === "ai") {
+      const shape = aiSelectionTool === "add-box" ? "box" : "brush";
+      setActiveStroke({ kind: shape, points: [point], startPoint: point });
+      return;
+    }
+
     if (repairTool === "clone" && settingCloneSource) {
       setCloneSourcePoint(point);
       setSettingCloneSource(false);
@@ -546,6 +679,11 @@ export default function ImageWatermarkStudioTool() {
   }
 
   function finalizeStroke(stroke: Stroke) {
+    if (repairMethod === "ai") {
+      finalizeSelectionStroke(stroke);
+      return;
+    }
+
     const feather = featherPercent / 100;
     const radius = brushRadiusPercent / 100;
     let op: RepairOperation | null = null;
@@ -596,14 +734,148 @@ export default function ImageWatermarkStudioTool() {
     }
 
     if (!op) return;
-    setOpsHistory((h) => pushHistory(h, [...h.present, op as RepairOperation]));
+    setCommitsHistory((h) =>
+      pushHistory(
+        h,
+        [...h.present, { id: op!.id, kind: "quick", op: op! }],
+        COMMIT_HISTORY_LIMIT,
+      ),
+    );
+  }
+
+  function finalizeSelectionStroke(stroke: Stroke) {
+    const feather = featherPercent / 100;
+    const radius = brushRadiusPercent / 100;
+    const strokeKind: PendingStroke["kind"] =
+      aiSelectionTool === "erase" ? "erase" : "add";
+    let op: RepairOperation | null = null;
+
+    if (stroke.kind === "box") {
+      const a = stroke.points[0] as NormPoint;
+      const b = (stroke.points[stroke.points.length - 1] as NormPoint) ?? a;
+      const rect = {
+        x: Math.min(a.x, b.x),
+        y: Math.min(a.y, b.y),
+        width: Math.abs(b.x - a.x),
+        height: Math.abs(b.y - a.y),
+      };
+      if (rect.width <= 0.002 || rect.height <= 0.002) return;
+      op = { id: generateOperationId(), kind: "box", rect, feather };
+    } else {
+      if (stroke.points.length === 0) return;
+      op = {
+        id: generateOperationId(),
+        kind: "brush",
+        points: stroke.points,
+        radius,
+        feather,
+      };
+    }
+
+    setPendingHistory((h) =>
+      pushHistory(
+        h,
+        [...h.present, { id: op!.id, kind: strokeKind, op: op! }],
+        SELECTION_HISTORY_LIMIT,
+      ),
+    );
   }
 
   function handleUndo() {
-    setOpsHistory((h) => historyUndo(h));
+    setCommitsHistory((h) => historyUndo(h));
   }
   function handleRedo() {
-    setOpsHistory((h) => historyRedo(h));
+    setCommitsHistory((h) => historyRedo(h));
+  }
+
+  function handleUndoSelection() {
+    setPendingHistory((h) => historyUndo(h));
+  }
+  function handleRedoSelection() {
+    setPendingHistory((h) => historyRedo(h));
+  }
+  function handleClearSelection() {
+    setPendingHistory((h) => pushHistory(h, [], SELECTION_HISTORY_LIMIT));
+  }
+
+  async function handleLoadModel() {
+    setIsLoadingModel(true);
+    setModelLoadError(null);
+    setModelLoadProgress(null);
+    try {
+      const bytes = await fetchModelBytes((progress) =>
+        setModelLoadProgress(progress),
+      );
+      const loaded = await createInpaintSession(bytes);
+      setAiSession(loaded);
+      setAiBackend(loaded.backend);
+    } catch (err) {
+      setModelLoadError(
+        err instanceof Error
+          ? `Couldn't load the AI model: ${err.message}`
+          : "Couldn't load the AI model in this browser.",
+      );
+    } finally {
+      setIsLoadingModel(false);
+    }
+  }
+
+  async function handleRemove() {
+    if (
+      !aiSession ||
+      !workingSize ||
+      !baseWorkingImageData ||
+      !composedWorkingImageData
+    )
+      return;
+    const instances = resolveAddInstances(
+      pendingStrokes,
+      workingSize.width,
+      workingSize.height,
+    ).map((i) => i.op);
+    if (instances.length === 0) return;
+
+    setIsRemoving(true);
+    setRemoveError(null);
+    setRemoveProgress({ instance: 0, instanceCount: instances.length });
+    try {
+      const result = await runAIInstances(
+        composedWorkingImageData,
+        instances,
+        aiSession,
+        (p) =>
+          setRemoveProgress({
+            instance: p.instanceIndex + 1,
+            instanceCount: p.instanceCount,
+          }),
+      );
+      const previewSnapshot = toImageData(result);
+      setCommitsHistory((h) =>
+        pushHistory(
+          h,
+          [
+            ...h.present,
+            {
+              id: generateOperationId(),
+              kind: "ai",
+              instances,
+              previewSnapshot,
+            },
+          ],
+          COMMIT_HISTORY_LIMIT,
+        ),
+      );
+      setPendingHistory(() => createHistory<PendingStroke[]>([]));
+    } catch (err) {
+      setRemoveError(
+        err instanceof Error
+          ? `AI removal failed: ${err.message}`
+          : "AI removal failed in this browser.",
+      );
+    } finally {
+      setIsRemoving(false);
+      setRemoveProgress(null);
+    }
   }
 
   // --- zoom controls ---
@@ -657,9 +929,44 @@ export default function ImageWatermarkStudioTool() {
           return;
         }
         tmpCtx.drawImage(sourceBitmap, 0, 0);
-        const fullImageData = tmpCtx.getImageData(0, 0, tmp.width, tmp.height);
-        const repaired = applyRepairOperations(fullImageData, ops);
-        tmpCtx.putImageData(toImageData(repaired), 0, 0);
+        let current = tmpCtx.getImageData(0, 0, tmp.width, tmp.height);
+        let quickBatch: RepairOperation[] = [];
+        for (const commit of commits) {
+          if (commit.kind === "quick") {
+            quickBatch.push(commit.op);
+            continue;
+          }
+          if (quickBatch.length > 0) {
+            current = toImageData(applyRepairOperations(current, quickBatch));
+            quickBatch = [];
+          }
+          if (!aiSession) {
+            setExportError(
+              "This image has AI-removed areas, but the AI model isn't loaded in this session anymore -- switch to Remove/repair mode to reload it, then export again.",
+            );
+            return;
+          }
+          setRemoveProgress({
+            instance: 0,
+            instanceCount: commit.instances.length,
+          });
+          const aiResult = await runAIInstances(
+            current,
+            commit.instances,
+            aiSession,
+            (p) =>
+              setRemoveProgress({
+                instance: p.instanceIndex + 1,
+                instanceCount: p.instanceCount,
+              }),
+          );
+          current = toImageData(aiResult);
+          setRemoveProgress(null);
+        }
+        if (quickBatch.length > 0) {
+          current = toImageData(applyRepairOperations(current, quickBatch));
+        }
+        tmpCtx.putImageData(current, 0, 0);
         ctx.drawImage(tmp, 0, 0);
       } else {
         ctx.imageSmoothingEnabled = true;
@@ -729,15 +1036,24 @@ export default function ImageWatermarkStudioTool() {
     setLayout(DEFAULT_LAYOUT);
     setStyle(DEFAULT_STYLE);
 
+    setRepairMethod("ai");
     setRepairTool("brush");
+    setAiSelectionTool("add-brush");
     setBrushRadiusPercent(DEFAULT_BRUSH_RADIUS_PERCENT);
     setFeatherPercent(DEFAULT_FEATHER_PERCENT);
-    setOpsHistory(createHistory<RepairOperation[]>([]));
+    setCommitsHistory(createHistory<Commit[]>([]));
+    setPendingHistory(createHistory<PendingStroke[]>([]));
     setActiveStroke(null);
     setSettingCloneSource(false);
     setCloneSourcePoint(null);
     cloneOffsetRef.current = null;
     setShowOriginal(false);
+    setIsRemoving(false);
+    setRemoveProgress(null);
+    setRemoveError(null);
+    // The loaded AI model/session is intentionally kept across a reset --
+    // it's a one-time, expensive download, and the user may want to repair
+    // another image next.
 
     setOutputFormat("image/png");
     setQualityPercent(90);
@@ -1254,94 +1570,309 @@ export default function ImageWatermarkStudioTool() {
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              <fieldset className="flex flex-col gap-2">
-                <legend className={labelText}>Repair tool</legend>
-                <div className="flex flex-wrap gap-2">
-                  {(["brush", "box", "lasso", "clone"] as RepairTool[]).map(
-                    (t) => (
+              <div
+                role="tablist"
+                aria-label="Repair method"
+                className="border-border-strong inline-flex w-fit gap-1 rounded-md border p-1"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={repairMethod === "ai"}
+                  onClick={() => setRepairMethod("ai")}
+                  className={
+                    repairMethod === "ai" ? buttonPrimary : buttonGhost
+                  }
+                >
+                  AI removal (recommended)
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={repairMethod === "quick"}
+                  onClick={() => setRepairMethod("quick")}
+                  className={
+                    repairMethod === "quick" ? buttonPrimary : buttonGhost
+                  }
+                >
+                  Quick repair
+                </button>
+              </div>
+
+              {repairMethod === "ai" ? (
+                <>
+                  {!aiSession ? (
+                    <div className="flex flex-col gap-3">
+                      <StatusMessage tone="neutral">
+                        AI removal uses a local inpainting model (LaMa,{" "}
+                        {MODEL_LICENSE}) downloaded from Hugging Face the first
+                        time you use it — about{" "}
+                        {formatBytes(MODEL_APPROX_BYTES)}, cached in this
+                        browser afterward so it won&apos;t download again. Your
+                        image is never uploaded; only the public model file is
+                        downloaded.
+                      </StatusMessage>
+                      {lowMemoryDevice && (
+                        <StatusMessage tone="neutral">
+                          This device reports limited memory — loading the AI
+                          model may be slow or fail. Quick repair is a
+                          lighter-weight fallback if that happens.
+                        </StatusMessage>
+                      )}
+                      <div>
+                        <button
+                          type="button"
+                          onClick={handleLoadModel}
+                          disabled={isLoadingModel}
+                          className={buttonPrimary}
+                        >
+                          {isLoadingModel
+                            ? "Loading AI model…"
+                            : `Load AI model (${formatBytes(MODEL_APPROX_BYTES)})`}
+                        </button>
+                      </div>
+                      {isLoadingModel && (
+                        <div className="flex flex-col gap-1">
+                          <div className="bg-bg-sunken h-2 overflow-hidden rounded-full">
+                            <div
+                              className="bg-accent h-full transition-[width]"
+                              style={{ width: `${modelLoadPercent}%` }}
+                            />
+                          </div>
+                          <p className="text-text-muted text-sm" role="status">
+                            {modelLoadProgress?.fromCache
+                              ? "Loading cached model…"
+                              : `${formatBytes(modelLoadProgress?.loadedBytes ?? 0)} / ${formatBytes(modelLoadProgress?.totalBytes ?? MODEL_APPROX_BYTES)}`}
+                          </p>
+                        </div>
+                      )}
+                      {modelLoadError && (
+                        <StatusMessage tone="error">
+                          {modelLoadError}
+                        </StatusMessage>
+                      )}
+                    </div>
+                  ) : (
+                    <StatusMessage tone="success">
+                      AI model ready — running on{" "}
+                      {aiBackend === "webgpu"
+                        ? "your GPU (WebGPU)"
+                        : "CPU (WebAssembly) — this browser doesn't support WebGPU, so removal will be slower"}
+                      .
+                    </StatusMessage>
+                  )}
+
+                  <fieldset className="flex flex-col gap-2">
+                    <legend className={labelText}>Selection tool</legend>
+                    <div className="flex flex-wrap gap-2">
+                      {(
+                        [
+                          { value: "add-brush", label: "Brush" },
+                          { value: "add-box", label: "Box select" },
+                          { value: "erase", label: "Erase selection" },
+                        ] as { value: AISelectionTool; label: string }[]
+                      ).map((t) => (
+                        <button
+                          key={t.value}
+                          type="button"
+                          aria-pressed={aiSelectionTool === t.value}
+                          onClick={() => setAiSelectionTool(t.value)}
+                          className={
+                            aiSelectionTool === t.value
+                              ? buttonSecondary
+                              : buttonGhost
+                          }
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+                  </fieldset>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label htmlFor={brushId} className="flex flex-col gap-1">
+                      <span className={labelText}>
+                        Brush size: {brushRadiusPercent}%
+                      </span>
+                      <input
+                        id={brushId}
+                        type="range"
+                        min={0.5}
+                        max={20}
+                        step={0.5}
+                        value={brushRadiusPercent}
+                        onChange={(e) =>
+                          setBrushRadiusPercent(Number(e.target.value))
+                        }
+                        className="accent-accent"
+                        disabled={aiSelectionTool === "add-box"}
+                      />
+                    </label>
+                    <label htmlFor={featherId} className="flex flex-col gap-1">
+                      <span className={labelText}>
+                        Feather: {featherPercent}%
+                      </span>
+                      <input
+                        id={featherId}
+                        type="range"
+                        min={0}
+                        max={10}
+                        step={0.5}
+                        value={featherPercent}
+                        onChange={(e) =>
+                          setFeatherPercent(Number(e.target.value))
+                        }
+                        className="accent-accent"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleUndoSelection}
+                      disabled={!canUndo(pendingHistory)}
+                      className={buttonGhost}
+                    >
+                      Undo selection
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRedoSelection}
+                      disabled={!canRedo(pendingHistory)}
+                      className={buttonGhost}
+                    >
+                      Redo selection
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClearSelection}
+                      disabled={pendingStrokes.length === 0}
+                      className={buttonGhost}
+                    >
+                      Clear selection
+                    </button>
+                  </div>
+
+                  {removeError && (
+                    <StatusMessage tone="error">{removeError}</StatusMessage>
+                  )}
+
+                  <div>
+                    <button
+                      type="button"
+                      onClick={handleRemove}
+                      disabled={
+                        !aiSession || isRemoving || pendingStrokes.length === 0
+                      }
+                      className={buttonPrimary}
+                    >
+                      {isRemoving
+                        ? removeProgress
+                          ? `Removing… (${removeProgress.instance}/${removeProgress.instanceCount})`
+                          : "Removing…"
+                        : "Remove"}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <fieldset className="flex flex-col gap-2">
+                    <legend className={labelText}>Repair tool</legend>
+                    <div className="flex flex-wrap gap-2">
+                      {(["brush", "box", "lasso", "clone"] as RepairTool[]).map(
+                        (t) => (
+                          <button
+                            key={t}
+                            type="button"
+                            aria-pressed={repairTool === t}
+                            onClick={() => {
+                              setRepairTool(t);
+                              if (t !== "clone") setSettingCloneSource(false);
+                            }}
+                            className={
+                              repairTool === t ? buttonSecondary : buttonGhost
+                            }
+                          >
+                            {t === "brush" && "Brush (content-aware)"}
+                            {t === "box" && "Box select"}
+                            {t === "lasso" && "Lasso"}
+                            {t === "clone" && "Clone stamp"}
+                          </button>
+                        ),
+                      )}
+                    </div>
+                  </fieldset>
+
+                  {repairTool === "clone" && (
+                    <div className="flex flex-wrap items-center gap-3">
                       <button
-                        key={t}
                         type="button"
-                        aria-pressed={repairTool === t}
-                        onClick={() => {
-                          setRepairTool(t);
-                          if (t !== "clone") setSettingCloneSource(false);
-                        }}
+                        aria-pressed={settingCloneSource}
+                        onClick={() => setSettingCloneSource((v) => !v)}
                         className={
-                          repairTool === t ? buttonSecondary : buttonGhost
+                          settingCloneSource ? buttonSecondary : buttonGhost
                         }
                       >
-                        {t === "brush" && "Brush (content-aware)"}
-                        {t === "box" && "Box select"}
-                        {t === "lasso" && "Lasso"}
-                        {t === "clone" && "Clone stamp"}
+                        {settingCloneSource
+                          ? "Click the source point…"
+                          : "Set source point"}
                       </button>
-                    ),
+                      <span className="text-text-muted text-sm">
+                        {cloneSourcePoint
+                          ? "Source set — paint over the area to repair."
+                          : "Set a source point before painting."}
+                      </span>
+                    </div>
                   )}
-                </div>
-              </fieldset>
 
-              {repairTool === "clone" && (
-                <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    aria-pressed={settingCloneSource}
-                    onClick={() => setSettingCloneSource((v) => !v)}
-                    className={
-                      settingCloneSource ? buttonSecondary : buttonGhost
-                    }
-                  >
-                    {settingCloneSource
-                      ? "Click the source point…"
-                      : "Set source point"}
-                  </button>
-                  <span className="text-text-muted text-sm">
-                    {cloneSourcePoint
-                      ? "Source set — paint over the area to repair."
-                      : "Set a source point before painting."}
-                  </span>
-                </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label htmlFor={brushId} className="flex flex-col gap-1">
+                      <span className={labelText}>
+                        Brush size: {brushRadiusPercent}%
+                      </span>
+                      <input
+                        id={brushId}
+                        type="range"
+                        min={0.5}
+                        max={20}
+                        step={0.5}
+                        value={brushRadiusPercent}
+                        onChange={(e) =>
+                          setBrushRadiusPercent(Number(e.target.value))
+                        }
+                        className="accent-accent"
+                        disabled={
+                          repairTool === "box" || repairTool === "lasso"
+                        }
+                      />
+                    </label>
+                    <label htmlFor={featherId} className="flex flex-col gap-1">
+                      <span className={labelText}>
+                        Feather: {featherPercent}%
+                      </span>
+                      <input
+                        id={featherId}
+                        type="range"
+                        min={0}
+                        max={10}
+                        step={0.5}
+                        value={featherPercent}
+                        onChange={(e) =>
+                          setFeatherPercent(Number(e.target.value))
+                        }
+                        className="accent-accent"
+                      />
+                    </label>
+                  </div>
+                </>
               )}
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label htmlFor={brushId} className="flex flex-col gap-1">
-                  <span className={labelText}>
-                    Brush size: {brushRadiusPercent}%
-                  </span>
-                  <input
-                    id={brushId}
-                    type="range"
-                    min={0.5}
-                    max={20}
-                    step={0.5}
-                    value={brushRadiusPercent}
-                    onChange={(e) =>
-                      setBrushRadiusPercent(Number(e.target.value))
-                    }
-                    className="accent-accent"
-                    disabled={repairTool === "box" || repairTool === "lasso"}
-                  />
-                </label>
-                <label htmlFor={featherId} className="flex flex-col gap-1">
-                  <span className={labelText}>Feather: {featherPercent}%</span>
-                  <input
-                    id={featherId}
-                    type="range"
-                    min={0}
-                    max={10}
-                    step={0.5}
-                    value={featherPercent}
-                    onChange={(e) => setFeatherPercent(Number(e.target.value))}
-                    className="accent-accent"
-                  />
-                </label>
-              </div>
 
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"
                   onClick={handleUndo}
-                  disabled={!canUndo(opsHistory)}
+                  disabled={!canUndo(commitsHistory)}
                   className={buttonGhost}
                 >
                   Undo
@@ -1349,13 +1880,14 @@ export default function ImageWatermarkStudioTool() {
                 <button
                   type="button"
                   onClick={handleRedo}
-                  disabled={!canRedo(opsHistory)}
+                  disabled={!canRedo(commitsHistory)}
                   className={buttonGhost}
                 >
                   Redo
                 </button>
                 <span className="text-text-muted text-sm">
-                  {ops.length} repair {ops.length === 1 ? "edit" : "edits"}
+                  {commits.length} repair{" "}
+                  {commits.length === 1 ? "edit" : "edits"}
                 </span>
               </div>
             </div>

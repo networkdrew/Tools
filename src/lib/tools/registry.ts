@@ -470,11 +470,11 @@ const rawTools = [
     slug: "image-watermark-studio",
     name: "Image Watermark Studio",
     shortDescription:
-      "Add text or logo watermarks, or repair small blemishes on your own images, entirely in your browser.",
+      "Add text or logo watermarks, or remove watermarks and blemishes from your own images using a local AI model.",
     description: [
       "Add a text or logo watermark to an image with full control over position, size, opacity, rotation, color, font, shadow, and repetition (single, tiled, or diagonal), dragging it directly on the preview or dialing it in with sliders.",
-      "Switch to Remove / Repair mode to brush, box-select, or lasso a small area — like your own watermark, a timestamp, dust, or a scratch — and run a local content-aware fill, with a manual clone-stamp tool as a fallback and full undo/redo history.",
-      "Everything runs on your device using the Canvas API: images are decoded, edited, and re-encoded locally and are never uploaded. The working preview may be downscaled for smoother editing on large images, but downloads are always rendered at the original resolution.",
+      "Switch to Remove / Repair mode to brush, box-select, or erase a selection over a small area — like your own watermark, a timestamp, dust, or a scratch — then run AI removal, a real local inpainting model (LaMa) that reconstructs the area from its surroundings. A lightweight Quick repair (no model download) is available as a faster fallback, with a manual clone-stamp tool underneath that.",
+      "Your image is never uploaded — decoding, editing, and re-encoding all happen on your device using the Canvas API, and downloads are always rendered at the original resolution even though the on-screen preview may be downscaled for large images. AI removal is the one exception to 'nothing leaves your device': the first time you use it, your browser downloads the public LaMa model file (about 200 MB) from Hugging Face and the ONNX Runtime Web engine from its CDN, both cached afterward so it only happens once. Only that public model file is transferred — never your image.",
     ],
     categoryId: "images-media",
     tags: [
@@ -483,9 +483,10 @@ const rawTools = [
       "logo watermark",
       "remove watermark",
       "photo repair",
+      "ai inpainting",
       "content-aware fill",
       "clone stamp",
-      "inpainting",
+      "lama",
     ],
     aliases: [
       "watermark maker",
@@ -493,6 +494,7 @@ const rawTools = [
       "image watermark tool",
       "photo blemish remover",
       "object removal tool",
+      "ai watermark remover",
     ],
     executionMode: "browser",
     featured: true,
@@ -503,14 +505,15 @@ const rawTools = [
       "image-metadata-remover",
     ],
     usageNotes: [
-      "Large images are downscaled for the interactive preview only — downloads are always rendered from the original file at full resolution.",
-      "The Remove / Repair mode's automatic fill works best on small areas over fairly uniform backgrounds; for complex texture or large areas, use the manual clone-stamp tool for more control.",
-      "Only use Remove / Repair on images you own or have permission to edit — it isn't a way to strip ownership marks, watermarks, or credits from images that aren't yours, and results are never guaranteed to be perfect or undetectable.",
+      "AI removal downloads a real local inpainting model (LaMa, Apache-2.0 licensed, ~200 MB) from Hugging Face the first time you use it, and prefers your GPU (WebGPU) with an automatic CPU (WebAssembly) fallback in browsers that don't support it — the model is cached afterward so it only downloads once.",
+      "Large images are downscaled for the interactive preview only — downloads are always rendered from the original file at full resolution, including replaying AI removal at full resolution.",
+      "Quick repair is a lightweight fallback that needs no model download and works instantly, but it's noticeably weaker on complex backgrounds, faces, or repeated watermarks — AI removal is recommended whenever your browser supports it.",
+      "Only use Remove / Repair on images you own or have permission to edit — it isn't a way to strip ownership marks, watermarks, or credits from images that aren't yours, and results (from either method) are never guaranteed to be perfect or undetectable.",
       "JPEG output doesn't support transparency; a logo watermark's transparent areas or a PNG's alpha channel will be filled white when exporting to JPEG.",
     ],
     seo: {
       description:
-        "Free browser-based tool to add text or logo watermarks to images, or repair small blemishes with content-aware fill and a clone stamp — nothing is uploaded.",
+        "Free browser-based tool to add text or logo watermarks, or remove watermarks and blemishes with a local AI inpainting model (LaMa) — your image is never uploaded.",
     },
   },
 ] as const;
