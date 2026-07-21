@@ -250,6 +250,47 @@ const rawTools = [
         "Free WCAG 2.1 color contrast checker that runs entirely in your browser. Check text and background color pairs against AA and AAA thresholds.",
     },
   },
+  {
+    id: "image-compressor",
+    slug: "image-compressor",
+    name: "Image Compressor",
+    shortDescription:
+      "Shrink JPEG, PNG, and WebP images and optionally resize them, without uploading anything.",
+    description: [
+      "Choose a JPEG, PNG, or WebP image to re-encode it at a smaller file size, resize it by percentage or to fit within maximum dimensions, and download the result.",
+      "Everything happens locally using the browser's Canvas API — your image is decoded, redrawn, and re-encoded on your device and is never uploaded anywhere.",
+    ],
+    categoryId: "images-media",
+    tags: [
+      "image compressor",
+      "image resizer",
+      "compress image",
+      "resize image",
+      "jpeg",
+      "png",
+      "webp",
+    ],
+    aliases: [
+      "reduce image size",
+      "shrink image",
+      "image optimizer",
+      "photo compressor",
+    ],
+    executionMode: "browser",
+    featured: true,
+    addedAt: "2026-07-20",
+    relatedTools: ["qr-code-generator"],
+    usageNotes: [
+      "JPEG and WebP use the quality slider to trade file size for detail; PNG is always lossless, so quality doesn't apply to it.",
+      "Resizing never enlarges an image beyond its original dimensions — 'fit within' only ever shrinks.",
+      "Animated GIFs and SVGs aren't supported here: re-encoding through canvas would flatten animation or vector paths into a single raster frame.",
+      "Files over 25 MB are rejected to avoid freezing the tab on lower-powered devices.",
+    ],
+    seo: {
+      description:
+        "Free image compressor that runs entirely in your browser. Shrink and resize JPEG, PNG, and WebP images with nothing ever uploaded.",
+    },
+  },
 ] as const;
 
 export const tools: readonly ToolMeta[] = rawTools.map((t) =>

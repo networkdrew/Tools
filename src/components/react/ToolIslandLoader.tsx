@@ -23,6 +23,7 @@ const componentLoaders: Record<
   "base64-encoder-decoder": lazy(() => import("@/islands/Base64Tool")),
   "qr-code-generator": lazy(() => import("@/islands/QrCodeGeneratorTool")),
   "color-contrast-checker": lazy(() => import("@/islands/ColorContrastTool")),
+  "image-compressor": lazy(() => import("@/islands/ImageCompressorTool")),
 };
 
 export function getToolIslandIds(): string[] {

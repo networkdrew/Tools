@@ -38,6 +38,12 @@ const rawCategories = [
       "Check your designs and content against accessibility guidelines.",
     icon: "contrast",
   },
+  {
+    id: "images-media",
+    name: "Images & Media",
+    description: "Compress, resize, and convert images without uploading them.",
+    icon: "image",
+  },
 ] as const satisfies readonly Category[];
 
 export const categories: readonly Category[] = rawCategories.map((c) =>
