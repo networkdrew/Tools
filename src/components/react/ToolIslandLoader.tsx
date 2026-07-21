@@ -24,6 +24,9 @@ const componentLoaders: Record<
   "qr-code-generator": lazy(() => import("@/islands/QrCodeGeneratorTool")),
   "color-contrast-checker": lazy(() => import("@/islands/ColorContrastTool")),
   "image-compressor": lazy(() => import("@/islands/ImageCompressorTool")),
+  "image-format-converter": lazy(
+    () => import("@/islands/ImageFormatConverterTool"),
+  ),
   "csv-json-converter": lazy(() => import("@/islands/CsvJsonConverterTool")),
 };
 

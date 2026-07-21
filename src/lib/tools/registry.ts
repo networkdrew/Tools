@@ -279,7 +279,7 @@ const rawTools = [
     executionMode: "browser",
     featured: true,
     addedAt: "2026-07-20",
-    relatedTools: ["qr-code-generator"],
+    relatedTools: ["qr-code-generator", "image-format-converter"],
     usageNotes: [
       "JPEG and WebP use the quality slider to trade file size for detail; PNG is always lossless, so quality doesn't apply to it.",
       "Resizing never enlarges an image beyond its original dimensions — 'fit within' only ever shrinks.",
@@ -289,6 +289,47 @@ const rawTools = [
     seo: {
       description:
         "Free image compressor that runs entirely in your browser. Shrink and resize JPEG, PNG, and WebP images with nothing ever uploaded.",
+    },
+  },
+  {
+    id: "image-format-converter",
+    slug: "image-format-converter",
+    name: "Image Format Converter",
+    shortDescription:
+      "Convert PNG, JPEG, WebP, BMP, or GIF images to PNG, JPEG, or WebP, without uploading anything.",
+    description: [
+      "Choose a PNG, JPEG, WebP, BMP, or GIF image to convert it to PNG, JPEG, or WebP, preview the result, and download it.",
+      "Everything happens locally using the browser's Canvas API — your image is decoded, redrawn, and re-encoded on your device and is never uploaded anywhere.",
+    ],
+    categoryId: "images-media",
+    tags: [
+      "image converter",
+      "convert image",
+      "png to jpeg",
+      "jpeg to png",
+      "webp converter",
+      "gif to png",
+      "bmp converter",
+    ],
+    aliases: [
+      "image format converter",
+      "convert image format",
+      "png converter",
+      "webp to png",
+    ],
+    executionMode: "browser",
+    featured: false,
+    addedAt: "2026-07-20",
+    relatedTools: ["image-compressor"],
+    usageNotes: [
+      "JPEG doesn't support transparency — converting a transparent PNG, WebP, or GIF to JPEG fills transparent areas with white, and the tool warns you before you convert.",
+      "Animated GIFs and animated WebP images are flattened to their first frame; the tool detects and warns about this before you convert.",
+      "Quality only applies to JPEG and WebP output — PNG output is always lossless.",
+      "Files over 25 MB are rejected to avoid freezing the tab on lower-powered devices.",
+    ],
+    seo: {
+      description:
+        "Free image format converter that runs entirely in your browser. Convert PNG, JPEG, WebP, BMP, or GIF images to PNG, JPEG, or WebP with nothing uploaded.",
     },
   },
   {
