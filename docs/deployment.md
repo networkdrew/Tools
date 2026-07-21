@@ -15,6 +15,7 @@ This is a fully static site (`astro.config.mjs` sets `output: "static"`) — no 
 | Build command          | `npm run build`                                                                                                                                    |
 | Build output directory | `dist`                                                                                                                                             |
 | Root directory         | `/` (repo root)                                                                                                                                    |
+| Production branch      | This repository's default branch (currently `master`) — whichever branch is set as default on GitHub is what Cloudflare should deploy from.        |
 | Node version           | Set env var `NODE_VERSION=22` (or higher — Astro 7 requires Node ≥ 22.12). Match whatever version you last verified `npm run verify` with locally. |
 
 No environment variables are required for a production build — the canonical site URL is a source constant (`src/lib/config/site.ts`), not a runtime env var, by design (see `docs/architecture.md`).

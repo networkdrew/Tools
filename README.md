@@ -39,6 +39,20 @@ Run `npm run verify` before considering any change finished.
 
 See `docs/adding-a-tool.md` — it's a fixed, five-step recipe (logic → UI → wire into the island loader → registry entry → verify), backed by tests that fail if a step is skipped.
 
+## Deployment (Cloudflare Pages)
+
+This is a fully static site (`output: "static"` in `astro.config.mjs`, no adapter, no server runtime) deployed to Cloudflare Pages from this GitHub repository. When creating the Cloudflare Pages project, use:
+
+| Setting                | Value                                                 |
+| ---------------------- | ----------------------------------------------------- |
+| Framework preset       | Astro                                                 |
+| Build command          | `npm run build`                                       |
+| Build output directory | `dist`                                                |
+| Root directory         | Repository root (`/`)                                 |
+| Production branch      | This repository's default branch (currently `master`) |
+
+No environment variables or secrets are required to build or run this site. See `docs/deployment.md` for the full walkthrough, including connecting the `tools.drewcassidy.dev` custom domain without touching the existing `drewcassidy.dev` project.
+
 ## Documentation
 
 - `docs/architecture.md` — the tool registry, why tool islands are wired the way they are, directory layout, theming, search.
