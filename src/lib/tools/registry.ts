@@ -174,6 +174,44 @@ const rawTools = [
         "Free Base64 encoder and decoder that works entirely in your browser, with full UTF-8 and URL-safe support.",
     },
   },
+  {
+    id: "qr-code-generator",
+    slug: "qr-code-generator",
+    name: "QR Code Generator",
+    shortDescription:
+      "Turn any text or URL into a downloadable QR code, PNG or SVG.",
+    description: [
+      "Paste in a URL, Wi-Fi string, vCard, or any other text and get a scannable QR code you can download as a PNG or a resolution-independent SVG.",
+      "The QR code is built entirely in your browser — nothing you type is sent anywhere, so it's safe to use for links you haven't published yet or details you'd rather not put through a third-party generator.",
+    ],
+    categoryId: "converters",
+    tags: [
+      "qr code",
+      "qr generator",
+      "qr code maker",
+      "barcode",
+      "url to qr code",
+    ],
+    aliases: [
+      "generate qr code",
+      "qr code creator",
+      "text to qr code",
+      "make a qr code",
+    ],
+    executionMode: "browser",
+    featured: true,
+    addedAt: "2026-07-20",
+    relatedTools: ["base64-encoder-decoder"],
+    usageNotes: [
+      "Higher error correction levels make the code more resistant to smudges or damage, but require more modules for the same text.",
+      "Very long text may not fit at higher error correction levels — try Low or Medium first, or shorten the text.",
+      "Text is encoded as raw UTF-8 bytes (no explicit encoding marker), which every mainstream QR scanner reads correctly, though a few very old scanners may misread non-Latin scripts or emoji.",
+    ],
+    seo: {
+      description:
+        "Free QR code generator that runs entirely in your browser. Turn text or URLs into a downloadable PNG or SVG QR code — nothing is uploaded.",
+    },
+  },
 ] as const;
 
 export const tools: readonly ToolMeta[] = rawTools.map((t) =>

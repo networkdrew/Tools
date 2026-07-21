@@ -21,6 +21,7 @@ const componentLoaders: Record<
   "text-stats-cleanup": lazy(() => import("@/islands/TextStatsTool")),
   "timestamp-converter": lazy(() => import("@/islands/TimestampConverterTool")),
   "base64-encoder-decoder": lazy(() => import("@/islands/Base64Tool")),
+  "qr-code-generator": lazy(() => import("@/islands/QrCodeGeneratorTool")),
 };
 
 export function getToolIslandIds(): string[] {
