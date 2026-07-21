@@ -28,6 +28,9 @@ const componentLoaders: Record<
     () => import("@/islands/ImageFormatConverterTool"),
   ),
   "csv-json-converter": lazy(() => import("@/islands/CsvJsonConverterTool")),
+  "image-metadata-remover": lazy(
+    () => import("@/islands/ImageMetadataRemoverTool"),
+  ),
 };
 
 export function getToolIslandIds(): string[] {

@@ -279,7 +279,11 @@ const rawTools = [
     executionMode: "browser",
     featured: true,
     addedAt: "2026-07-20",
-    relatedTools: ["qr-code-generator", "image-format-converter"],
+    relatedTools: [
+      "qr-code-generator",
+      "image-format-converter",
+      "image-metadata-remover",
+    ],
     usageNotes: [
       "JPEG and WebP use the quality slider to trade file size for detail; PNG is always lossless, so quality doesn't apply to it.",
       "Resizing never enlarges an image beyond its original dimensions — 'fit within' only ever shrinks.",
@@ -320,7 +324,7 @@ const rawTools = [
     executionMode: "browser",
     featured: false,
     addedAt: "2026-07-20",
-    relatedTools: ["image-compressor"],
+    relatedTools: ["image-compressor", "image-metadata-remover"],
     usageNotes: [
       "JPEG doesn't support transparency — converting a transparent PNG, WebP, or GIF to JPEG fills transparent areas with white, and the tool warns you before you convert.",
       "Animated GIFs and animated WebP images are flattened to their first frame; the tool detects and warns about this before you convert.",
@@ -369,6 +373,47 @@ const rawTools = [
     seo: {
       description:
         "Free CSV to JSON and JSON to CSV converter that runs entirely in your browser. Handles quoted fields, custom delimiters, and headerless CSV.",
+    },
+  },
+  {
+    id: "image-metadata-remover",
+    slug: "image-metadata-remover",
+    name: "Image Metadata Remover",
+    shortDescription:
+      "Strip EXIF, GPS, and other hidden metadata from images entirely in your browser.",
+    description: [
+      "Choose a JPEG, PNG, WebP, BMP, or GIF image to remove EXIF data, GPS coordinates, camera details, embedded color profiles, and other non-visual metadata, then download the cleaned file.",
+      "Metadata is removed by decoding the image and redrawing it onto an HTML canvas, then re-encoding the result — the same approach used by the Image Compressor and Image Format Converter — so nothing is silently renamed or copied; the image data itself is rebuilt from scratch with no metadata attached. Everything happens locally and the file is never uploaded.",
+    ],
+    categoryId: "images-media",
+    tags: [
+      "remove metadata",
+      "exif remover",
+      "strip exif",
+      "image metadata",
+      "privacy",
+      "gps data removal",
+    ],
+    aliases: [
+      "exif remover",
+      "metadata stripper",
+      "remove gps data from photo",
+      "strip image metadata",
+      "photo privacy cleaner",
+    ],
+    executionMode: "browser",
+    featured: false,
+    addedAt: "2026-07-21",
+    relatedTools: ["image-compressor", "image-format-converter"],
+    usageNotes: [
+      "Metadata is removed by redrawing the image on canvas and re-encoding it, not by editing bytes directly — this strips all embedded metadata, but means the output isn't a byte-identical copy of the original minus metadata.",
+      "JPEG, PNG, and WebP are re-encoded back to their original format; BMP and GIF are saved as PNG instead, since browsers can't re-encode canvas output back to BMP or GIF and doing so is required to guarantee metadata removal. Animated GIF and WebP files are also flattened to a single frame in the process.",
+      "Embedded color profiles (ICC profiles) are stripped along with everything else — the output is standard sRGB, which can cause a subtle color shift for images from wide-gamut cameras or editing software.",
+      "Files over 25 MB are rejected to avoid freezing the tab on lower-powered devices.",
+    ],
+    seo: {
+      description:
+        "Free image metadata remover that strips EXIF, GPS, and other metadata from JPEG, PNG, WebP, BMP, and GIF images entirely in your browser — nothing is uploaded.",
     },
   },
 ] as const;
