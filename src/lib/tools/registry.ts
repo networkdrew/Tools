@@ -212,6 +212,44 @@ const rawTools = [
         "Free QR code generator that runs entirely in your browser. Turn text or URLs into a downloadable PNG or SVG QR code — nothing is uploaded.",
     },
   },
+  {
+    id: "color-contrast-checker",
+    slug: "color-contrast-checker",
+    name: "Color Contrast Checker",
+    shortDescription:
+      "Check text and background color pairs against WCAG 2.1 contrast requirements.",
+    description: [
+      "Enter a text color and a background color (hex, rgb()/rgba(), or a basic color name) to see the exact contrast ratio and whether it passes WCAG 2.1 AA and AAA for normal text, large text, and UI components.",
+      "Everything is computed locally with the standard WCAG relative-luminance formula — your colors are never sent anywhere.",
+    ],
+    categoryId: "accessibility",
+    tags: [
+      "color contrast",
+      "wcag",
+      "accessibility",
+      "contrast ratio",
+      "contrast checker",
+    ],
+    aliases: [
+      "contrast ratio checker",
+      "wcag contrast checker",
+      "accessible color checker",
+      "text contrast checker",
+    ],
+    executionMode: "browser",
+    featured: false,
+    addedAt: "2026-07-20",
+    relatedTools: [],
+    usageNotes: [
+      "4.5:1 is the WCAG AA minimum for normal text; 3:1 applies to large text (18pt+, or 14pt+ bold) and UI components.",
+      "Semi-transparent colors are flattened against an assumed white page background before the ratio is calculated — results may differ if your real background isn't white.",
+      "Passing AA is the widely-required baseline; AAA is a stricter, optional target for higher-contrast content.",
+    ],
+    seo: {
+      description:
+        "Free WCAG 2.1 color contrast checker that runs entirely in your browser. Check text and background color pairs against AA and AAA thresholds.",
+    },
+  },
 ] as const;
 
 export const tools: readonly ToolMeta[] = rawTools.map((t) =>

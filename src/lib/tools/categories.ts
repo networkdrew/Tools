@@ -31,6 +31,13 @@ const rawCategories = [
     description: "Turn one unit, format, or representation into another.",
     icon: "repeat",
   },
+  {
+    id: "accessibility",
+    name: "Accessibility",
+    description:
+      "Check your designs and content against accessibility guidelines.",
+    icon: "contrast",
+  },
 ] as const satisfies readonly Category[];
 
 export const categories: readonly Category[] = rawCategories.map((c) =>

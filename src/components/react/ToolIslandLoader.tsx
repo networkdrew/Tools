@@ -22,6 +22,7 @@ const componentLoaders: Record<
   "timestamp-converter": lazy(() => import("@/islands/TimestampConverterTool")),
   "base64-encoder-decoder": lazy(() => import("@/islands/Base64Tool")),
   "qr-code-generator": lazy(() => import("@/islands/QrCodeGeneratorTool")),
+  "color-contrast-checker": lazy(() => import("@/islands/ColorContrastTool")),
 };
 
 export function getToolIslandIds(): string[] {
