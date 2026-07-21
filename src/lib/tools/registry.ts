@@ -516,6 +516,52 @@ const rawTools = [
         "Free browser-based tool to add text or logo watermarks, or remove watermarks and blemishes with a local AI inpainting model (LaMa) — your image is never uploaded.",
     },
   },
+  {
+    id: "image-crop-resize",
+    slug: "image-crop-resize",
+    name: "Image Crop & Resize",
+    shortDescription:
+      "Crop, rotate, flip, and resize JPEG, PNG, WebP, BMP, or GIF images with live preview.",
+    description: [
+      "Drag a free-form crop area or snap it to a preset ratio (square, 4:3, 3:2, 16:9, profile photo, Instagram post/story, Facebook cover, YouTube thumbnail, or your own custom dimensions), then rotate, flip, and resize by pixels or percentage with fit, fill, or exact output modes.",
+      "Everything happens locally using the browser's Canvas API. Large images are shown at a downscaled working resolution for smooth dragging, but the exported file is always re-rendered from the original full-resolution image — nothing is uploaded, and cropping never upscales beyond the original resolution unless you turn that on explicitly.",
+    ],
+    categoryId: "images-media",
+    tags: [
+      "image cropper",
+      "crop image",
+      "resize image",
+      "image editor",
+      "aspect ratio",
+      "rotate image",
+      "flip image",
+    ],
+    aliases: [
+      "photo cropper",
+      "crop and resize",
+      "image resizer",
+      "picture cropper",
+      "crop tool",
+    ],
+    executionMode: "browser",
+    featured: true,
+    addedAt: "2026-07-21",
+    relatedTools: [
+      "image-compressor",
+      "image-format-converter",
+      "image-metadata-remover",
+    ],
+    usageNotes: [
+      "Undo and redo cover crop, rotate, and flip edits; export settings like format and quality use Reset to start over.",
+      "Fit keeps the whole crop visible and may end up smaller than the size you typed; Fill crops further to exactly match it; Exact stretches to match it, which can distort the image.",
+      "Animated GIF and WebP files are flattened to a single frame, and JPEG export fills transparent areas with white — both are called out with a warning before you export.",
+      "Files over 25 MB are rejected to avoid freezing the tab on lower-powered devices.",
+    ],
+    seo: {
+      description:
+        "Free image cropper and resizer that runs entirely in your browser. Crop with aspect-ratio presets, rotate, flip, and resize JPEG, PNG, WebP, BMP, or GIF images with nothing uploaded.",
+    },
+  },
 ] as const;
 
 export const tools: readonly ToolMeta[] = rawTools.map((t) =>

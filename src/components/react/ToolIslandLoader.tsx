@@ -35,6 +35,7 @@ const componentLoaders: Record<
   "image-watermark-studio": lazy(
     () => import("@/islands/ImageWatermarkStudioTool"),
   ),
+  "image-crop-resize": lazy(() => import("@/islands/ImageCropResizeTool")),
 };
 
 export function getToolIslandIds(): string[] {
