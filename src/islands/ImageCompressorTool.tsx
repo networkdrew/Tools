@@ -19,6 +19,8 @@ import {
   selectField,
   textField,
 } from "@/components/react/styles";
+import { SplitPane } from "@/components/react/workspace/SplitPane";
+import { Panel } from "@/components/react/workspace/Panel";
 
 type OutputFormat = "image/jpeg" | "image/webp" | "image/png";
 type ResizeMode = "none" | "scale" | "fit";
@@ -244,195 +246,226 @@ export default function ImageCompressorTool() {
     : null;
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <label htmlFor={fileInputId} className={labelText}>
-          Image file
-        </label>
-        <input
-          ref={fileInputRef}
-          id={fileInputId}
-          type="file"
-          accept="image/*"
-          onChange={handleFileChange}
-          className="text-text-muted file:bg-bg-elevated file:text-text file:border-border-strong hover:file:bg-bg-sunken text-sm file:mr-3 file:cursor-pointer file:rounded-md file:border file:px-3 file:py-2 file:text-sm file:font-medium"
-        />
-      </div>
-
-      {selectError && <StatusMessage tone="error">{selectError}</StatusMessage>}
-
-      {file && originalDimensions && !selectError && (
+    <SplitPane
+      main={
         <>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-            {previewUrl && (
-              <img
-                src={previewUrl}
-                alt={`Preview of ${file.name}`}
-                className="border-border-strong bg-bg-sunken h-32 w-32 shrink-0 rounded-md border object-contain"
-              />
-            )}
-            <dl className="text-text-muted grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-              <dt className="font-medium">Original size</dt>
-              <dd>{formatBytes(file.size)}</dd>
-              <dt className="font-medium">Dimensions</dt>
-              <dd>
-                {originalDimensions.width}×{originalDimensions.height}px
-              </dd>
-            </dl>
+          <div className="flex flex-col gap-2">
+            <label htmlFor={fileInputId} className={labelText}>
+              Image file
+            </label>
+            <input
+              ref={fileInputRef}
+              id={fileInputId}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="text-text-muted file:bg-bg-elevated file:text-text file:border-border-strong hover:file:bg-bg-sunken text-sm file:mr-3 file:cursor-pointer file:rounded-md file:border file:px-3 file:py-2 file:text-sm file:font-medium"
+            />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label htmlFor={formatId} className="flex flex-col gap-1">
-              <span className={labelText}>Output format</span>
-              <select
-                id={formatId}
-                value={format}
-                onChange={(e) => setFormat(e.target.value as OutputFormat)}
-                className={selectField}
-              >
-                {FORMAT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+          {selectError && (
+            <StatusMessage tone="error">{selectError}</StatusMessage>
+          )}
 
-            <label htmlFor={qualityId} className="flex flex-col gap-1">
-              <span className={labelText}>
-                Quality
-                {format === "image/png"
-                  ? " (not used for PNG)"
-                  : `: ${quality}%`}
-              </span>
-              <input
-                id={qualityId}
-                type="range"
-                min={1}
-                max={100}
-                value={quality}
-                disabled={format === "image/png"}
-                onChange={(e) => setQuality(Number(e.target.value))}
-                className="accent-accent disabled:opacity-50"
-              />
-            </label>
+          {file && originalDimensions && !selectError && (
+            <div className="grid flex-1 gap-4 sm:grid-cols-2">
+              <div className="border-border bg-bg-elevated flex flex-col gap-3 rounded-md border p-4">
+                <h2 className="text-text-muted text-xs font-semibold tracking-wide uppercase">
+                  Original
+                </h2>
+                {previewUrl && (
+                  <img
+                    src={previewUrl}
+                    alt={`Preview of ${file.name}`}
+                    className="border-border-strong bg-bg-sunken max-h-80 w-full rounded-md border object-contain"
+                  />
+                )}
+                <dl className="text-text-muted grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                  <dt className="font-medium">Size</dt>
+                  <dd>{formatBytes(file.size)}</dd>
+                  <dt className="font-medium">Dimensions</dt>
+                  <dd>
+                    {originalDimensions.width}×{originalDimensions.height}px
+                  </dd>
+                </dl>
+              </div>
 
-            <label htmlFor={resizeModeId} className="flex flex-col gap-1">
-              <span className={labelText}>Resize</span>
-              <select
-                id={resizeModeId}
-                value={resizeMode}
-                onChange={(e) => setResizeMode(e.target.value as ResizeMode)}
-                className={selectField}
-              >
-                {RESIZE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <div className="border-border bg-bg-elevated flex flex-col gap-3 rounded-md border p-4">
+                <h2 className="text-text-muted text-xs font-semibold tracking-wide uppercase">
+                  Compressed
+                </h2>
+                {result && !compressError ? (
+                  <>
+                    <img
+                      src={result.url}
+                      alt="Compressed preview"
+                      className="border-border-strong bg-bg-sunken max-h-80 w-full rounded-md border object-contain"
+                    />
+                    <dl className="text-text-muted grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                      <dt className="font-medium">Size</dt>
+                      <dd>{formatBytes(result.blob.size)}</dd>
+                      <dt className="font-medium">Dimensions</dt>
+                      <dd>
+                        {result.width}×{result.height}px
+                      </dd>
+                      {savingsPercent !== null && (
+                        <>
+                          <dt className="font-medium">Savings</dt>
+                          <dd role="status">{savingsPercent}% smaller</dd>
+                        </>
+                      )}
+                    </dl>
+                    <div>
+                      <button
+                        type="button"
+                        onClick={handleDownload}
+                        className={buttonSecondary}
+                      >
+                        Download compressed image
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-text-muted text-sm">
+                    Compress the image to see a preview here.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
-            {resizeMode === "scale" && (
-              <label htmlFor={scalePercentId} className="flex flex-col gap-1">
-                <span className={labelText}>Scale percentage</span>
+          {compressError && (
+            <StatusMessage tone="error">{compressError}</StatusMessage>
+          )}
+        </>
+      }
+      side={
+        file &&
+        originalDimensions &&
+        !selectError && (
+          <>
+            <Panel title="Output settings">
+              <label htmlFor={formatId} className="flex flex-col gap-1">
+                <span className={labelText}>Output format</span>
+                <select
+                  id={formatId}
+                  value={format}
+                  onChange={(e) => setFormat(e.target.value as OutputFormat)}
+                  className={selectField}
+                >
+                  {FORMAT_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label htmlFor={qualityId} className="flex flex-col gap-1">
+                <span className={labelText}>
+                  Quality
+                  {format === "image/png"
+                    ? " (not used for PNG)"
+                    : `: ${quality}%`}
+                </span>
                 <input
-                  id={scalePercentId}
-                  type="number"
+                  id={qualityId}
+                  type="range"
                   min={1}
-                  value={scalePercent}
-                  onChange={(e) => setScalePercent(Number(e.target.value))}
-                  className={textField}
+                  max={100}
+                  value={quality}
+                  disabled={format === "image/png"}
+                  onChange={(e) => setQuality(Number(e.target.value))}
+                  className="accent-accent disabled:opacity-50"
                 />
               </label>
-            )}
 
-            {resizeMode === "fit" && (
-              <div className="flex gap-3">
-                <label
-                  htmlFor={maxWidthId}
-                  className="flex flex-1 flex-col gap-1"
+              <label htmlFor={resizeModeId} className="flex flex-col gap-1">
+                <span className={labelText}>Resize</span>
+                <select
+                  id={resizeModeId}
+                  value={resizeMode}
+                  onChange={(e) => setResizeMode(e.target.value as ResizeMode)}
+                  className={selectField}
                 >
-                  <span className={labelText}>Max width (px)</span>
+                  {RESIZE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {resizeMode === "scale" && (
+                <label htmlFor={scalePercentId} className="flex flex-col gap-1">
+                  <span className={labelText}>Scale percentage</span>
                   <input
-                    id={maxWidthId}
+                    id={scalePercentId}
                     type="number"
                     min={1}
-                    value={maxWidth}
-                    onChange={(e) => setMaxWidth(Number(e.target.value))}
+                    value={scalePercent}
+                    onChange={(e) => setScalePercent(Number(e.target.value))}
                     className={textField}
                   />
                 </label>
-                <label
-                  htmlFor={maxHeightId}
-                  className="flex flex-1 flex-col gap-1"
+              )}
+
+              {resizeMode === "fit" && (
+                <div className="flex gap-3">
+                  <label
+                    htmlFor={maxWidthId}
+                    className="flex flex-1 flex-col gap-1"
+                  >
+                    <span className={labelText}>Max width (px)</span>
+                    <input
+                      id={maxWidthId}
+                      type="number"
+                      min={1}
+                      value={maxWidth}
+                      onChange={(e) => setMaxWidth(Number(e.target.value))}
+                      className={textField}
+                    />
+                  </label>
+                  <label
+                    htmlFor={maxHeightId}
+                    className="flex flex-1 flex-col gap-1"
+                  >
+                    <span className={labelText}>Max height (px)</span>
+                    <input
+                      id={maxHeightId}
+                      type="number"
+                      min={1}
+                      value={maxHeight}
+                      onChange={(e) => setMaxHeight(Number(e.target.value))}
+                      className={textField}
+                    />
+                  </label>
+                </div>
+              )}
+            </Panel>
+
+            <Panel title="Actions">
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleCompress}
+                  disabled={isProcessing}
+                  className={buttonPrimary}
                 >
-                  <span className={labelText}>Max height (px)</span>
-                  <input
-                    id={maxHeightId}
-                    type="number"
-                    min={1}
-                    value={maxHeight}
-                    onChange={(e) => setMaxHeight(Number(e.target.value))}
-                    className={textField}
-                  />
-                </label>
+                  {isProcessing ? "Compressing…" : "Compress image"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className={buttonGhost}
+                >
+                  Reset
+                </button>
               </div>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={handleCompress}
-              disabled={isProcessing}
-              className={buttonPrimary}
-            >
-              {isProcessing ? "Compressing…" : "Compress image"}
-            </button>
-            <button type="button" onClick={handleReset} className={buttonGhost}>
-              Reset
-            </button>
-          </div>
-        </>
-      )}
-
-      {compressError && (
-        <StatusMessage tone="error">{compressError}</StatusMessage>
-      )}
-
-      {result && !compressError && (
-        <div className="flex flex-col gap-3">
-          <img
-            src={result.url}
-            alt="Compressed preview"
-            className="border-border-strong bg-bg-sunken h-48 w-48 rounded-md border object-contain"
-          />
-          <dl className="text-text-muted grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-            <dt className="font-medium">Compressed size</dt>
-            <dd>{formatBytes(result.blob.size)}</dd>
-            <dt className="font-medium">Dimensions</dt>
-            <dd>
-              {result.width}×{result.height}px
-            </dd>
-            {savingsPercent !== null && (
-              <>
-                <dt className="font-medium">Savings</dt>
-                <dd role="status">{savingsPercent}% smaller</dd>
-              </>
-            )}
-          </dl>
-          <div>
-            <button
-              type="button"
-              onClick={handleDownload}
-              className={buttonSecondary}
-            >
-              Download compressed image
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+            </Panel>
+          </>
+        )
+      }
+    />
   );
 }

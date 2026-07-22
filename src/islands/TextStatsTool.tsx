@@ -17,6 +17,8 @@ import {
   labelText,
   textareaField,
 } from "@/components/react/styles";
+import { SplitPane } from "@/components/react/workspace/SplitPane";
+import { Panel } from "@/components/react/workspace/Panel";
 
 const cleanupActions = [
   { label: "Trim each line", fn: trimLines },
@@ -45,62 +47,72 @@ export default function TextStatsTool() {
   ];
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <label htmlFor={inputId} className={labelText}>
-          Text
-        </label>
-        <textarea
-          id={inputId}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Paste or type text here…"
-          rows={12}
-          className={textareaField}
-        />
-      </div>
+    <SplitPane
+      main={
+        <div className="flex min-h-0 flex-1 flex-col gap-2">
+          <label htmlFor={inputId} className={labelText}>
+            Text
+          </label>
+          <textarea
+            id={inputId}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Paste or type text here…"
+            className={`${textareaField} min-h-[50vh] flex-1 resize-none md:min-h-0`}
+          />
+        </div>
+      }
+      side={
+        <>
+          <Panel title="Statistics">
+            <div
+              className="grid grid-cols-2 gap-3"
+              role="group"
+              aria-label="Text statistics"
+            >
+              {statEntries.map(([label, value]) => (
+                <div
+                  key={label}
+                  className="border-border bg-bg rounded-md border p-3"
+                >
+                  <div className="text-text font-mono text-xl">{value}</div>
+                  <div className="text-text-muted text-xs">{label}</div>
+                </div>
+              ))}
+            </div>
+          </Panel>
 
-      <div
-        className="grid grid-cols-2 gap-3 sm:grid-cols-4"
-        role="group"
-        aria-label="Text statistics"
-      >
-        {statEntries.map(([label, value]) => (
-          <div
-            key={label}
-            className="border-border bg-bg-elevated rounded-md border p-3"
-          >
-            <div className="text-text font-mono text-xl">{value}</div>
-            <div className="text-text-muted text-xs">{label}</div>
-          </div>
-        ))}
-      </div>
+          <Panel title="Cleanup">
+            <div className="flex flex-wrap items-center gap-2">
+              {cleanupActions.map(({ label, fn }) => (
+                <button
+                  key={label}
+                  type="button"
+                  className={buttonSecondary}
+                  disabled={!text}
+                  onClick={() => setText((prev) => fn(prev))}
+                >
+                  {label}
+                </button>
+              ))}
+              <button
+                type="button"
+                className={buttonGhost}
+                onClick={() => setText("")}
+              >
+                Reset
+              </button>
+            </div>
+          </Panel>
 
-      <div className="flex flex-wrap items-center gap-2">
-        {cleanupActions.map(({ label, fn }) => (
-          <button
-            key={label}
-            type="button"
-            className={buttonSecondary}
-            disabled={!text}
-            onClick={() => setText((prev) => fn(prev))}
-          >
-            {label}
-          </button>
-        ))}
-        <button
-          type="button"
-          className={buttonGhost}
-          onClick={() => setText("")}
-        >
-          Reset
-        </button>
-      </div>
-
-      <div className="flex gap-2">
-        <CopyButton text={text} />
-        <DownloadButton text={text} filename="text.txt" />
-      </div>
-    </div>
+          <Panel title="Export">
+            <div className="flex gap-2">
+              <CopyButton text={text} />
+              <DownloadButton text={text} filename="text.txt" />
+            </div>
+          </Panel>
+        </>
+      }
+    />
   );
 }

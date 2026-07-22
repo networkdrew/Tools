@@ -83,6 +83,7 @@ import {
   selectField,
   textField,
 } from "@/components/react/styles";
+import { SplitPane } from "@/components/react/workspace/SplitPane";
 
 type Mode = "watermark" | "repair";
 type WatermarkType = "text" | "image";
@@ -1074,714 +1075,745 @@ export default function ImageWatermarkStudioTool() {
         : "cursor-default";
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <label htmlFor={fileInputId} className={labelText}>
-          Image file
-        </label>
-        <input
-          ref={fileInputRef}
-          id={fileInputId}
-          type="file"
-          accept="image/png,image/jpeg,image/webp,image/bmp,image/gif"
-          onChange={handleFileChange}
-          className="text-text-muted file:bg-bg-elevated file:text-text file:border-border-strong hover:file:bg-bg-sunken text-sm file:mr-3 file:cursor-pointer file:rounded-md file:border file:px-3 file:py-2 file:text-sm file:font-medium"
-        />
-      </div>
-
-      {selectError && <StatusMessage tone="error">{selectError}</StatusMessage>}
-
-      {file && workingSize && originalDimensions && !selectError && (
+    <SplitPane
+      main={
         <>
-          <dl className="text-text-muted flex flex-wrap gap-x-6 gap-y-1 text-sm">
-            <div className="flex gap-1">
-              <dt className="font-medium">File</dt>
-              <dd>{file.name}</dd>
-            </div>
-            <div className="flex gap-1">
-              <dt className="font-medium">Dimensions</dt>
-              <dd>
-                {originalDimensions.width}×{originalDimensions.height}px
-              </dd>
-            </div>
-            <div className="flex gap-1">
-              <dt className="font-medium">Size</dt>
-              <dd>{formatBytes(file.size)}</dd>
-            </div>
-          </dl>
-
-          <div
-            role="tablist"
-            aria-label="Editing mode"
-            className="border-border-strong inline-flex w-fit gap-1 rounded-md border p-1"
-          >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === "watermark"}
-              onClick={() => setMode("watermark")}
-              className={mode === "watermark" ? buttonPrimary : buttonGhost}
-            >
-              Add watermark
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === "repair"}
-              onClick={() => setMode("repair")}
-              className={mode === "repair" ? buttonPrimary : buttonGhost}
-            >
-              Remove / repair
-            </button>
+          <div className="flex flex-col gap-2">
+            <label htmlFor={fileInputId} className={labelText}>
+              Image file
+            </label>
+            <input
+              ref={fileInputRef}
+              id={fileInputId}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/bmp,image/gif"
+              onChange={handleFileChange}
+              className="text-text-muted file:bg-bg-elevated file:text-text file:border-border-strong hover:file:bg-bg-sunken text-sm file:mr-3 file:cursor-pointer file:rounded-md file:border file:px-3 file:py-2 file:text-sm file:font-medium"
+            />
           </div>
 
-          {mode === "repair" && (
-            <StatusMessage tone="neutral">
-              <strong className="font-medium">
-                Only use this on images you own or have permission to edit
-              </strong>
-              {
-                " — for example, removing your own watermark, timestamps, dust, or blemishes. Don't use it to remove ownership marks, watermarks, or credits from images that aren't yours."
-              }
-            </StatusMessage>
+          {selectError && (
+            <StatusMessage tone="error">{selectError}</StatusMessage>
           )}
 
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={handleZoomOut}
-              className={buttonGhost}
-              aria-label="Zoom out"
-            >
-              −
-            </button>
-            <span className="text-text-muted w-14 text-center text-sm">
-              {Math.round(zoom * 100)}%
-            </span>
-            <button
-              type="button"
-              onClick={handleZoomIn}
-              className={buttonGhost}
-              aria-label="Zoom in"
-            >
-              +
-            </button>
-            <button type="button" onClick={handleFit} className={buttonGhost}>
-              Fit
-            </button>
-            <button
-              type="button"
-              aria-pressed={panActive}
-              onClick={() => setPanActive((v) => !v)}
-              className={panActive ? buttonSecondary : buttonGhost}
-            >
-              Pan tool
-            </button>
-            {mode === "repair" && (
-              <button
-                type="button"
-                aria-pressed={showOriginal}
-                onClick={() => setShowOriginal((v) => !v)}
-                className={showOriginal ? buttonSecondary : buttonGhost}
-              >
-                {showOriginal ? "Showing original" : "Show original"}
-              </button>
-            )}
-          </div>
-
-          <div
-            className="border-border-strong bg-bg-sunken relative overflow-hidden rounded-md border"
-            style={{
-              height: 480,
-              backgroundImage:
-                "linear-gradient(45deg, rgba(128,128,128,0.15) 25%, transparent 25%), linear-gradient(-45deg, rgba(128,128,128,0.15) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, rgba(128,128,128,0.15) 75%), linear-gradient(-45deg, transparent 75%, rgba(128,128,128,0.15) 75%)",
-              backgroundSize: "20px 20px",
-              backgroundPosition: "0 0, 0 10px, 10px -10px, -10px 0px",
-            }}
-          >
-            <div
-              ref={containerRef}
-              className="relative h-full w-full overflow-hidden"
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-                  transformOrigin: "0 0",
-                }}
-              >
-                <canvas
-                  ref={canvasRef}
-                  role="img"
-                  aria-label={
-                    mode === "watermark"
-                      ? "Watermark preview. Use the position controls to place the watermark."
-                      : "Repair preview. Use the brush, box, or lasso tool to select an area to repair."
-                  }
-                  className={canvasCursor}
-                  style={{ display: "block", touchAction: "none" }}
-                  onPointerDown={handleCanvasPointerDown}
-                  onPointerMove={handleCanvasPointerMove}
-                  onPointerUp={handleCanvasPointerUp}
-                  onPointerCancel={handleCanvasPointerUp}
-                />
-                {mode === "watermark" &&
-                  !panActive &&
-                  hasRenderableWatermark &&
-                  overlayCenterPx &&
-                  contentSizeWorking &&
-                  workingSize && (
-                    <WatermarkOverlay
-                      centerPx={overlayCenterPx}
-                      sizePx={contentSizeWorking}
-                      rotationDeg={layout.rotationDeg}
-                      workingSize={workingSize}
-                      containerRef={containerRef}
-                      zoom={zoom}
-                      pan={pan}
-                      scalePercent={style.scalePercent}
-                      onMove={handleOverlayMove}
-                      onResizeScalePercent={handleOverlayResize}
-                    />
-                  )}
-              </div>
-            </div>
-          </div>
-
-          {mode === "watermark" ? (
-            <div className="flex flex-col gap-4">
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  aria-pressed={watermarkType === "text"}
-                  onClick={() => setWatermarkType("text")}
-                  className={
-                    watermarkType === "text" ? buttonSecondary : buttonGhost
-                  }
-                >
-                  Text watermark
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={watermarkType === "image"}
-                  onClick={() => setWatermarkType("image")}
-                  className={
-                    watermarkType === "image" ? buttonSecondary : buttonGhost
-                  }
-                >
-                  Logo image watermark
-                </button>
-              </div>
-
-              {watermarkType === "text" ? (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <label
-                    htmlFor={textId}
-                    className="flex flex-col gap-1 sm:col-span-2"
-                  >
-                    <span className={labelText}>Watermark text</span>
-                    <input
-                      id={textId}
-                      type="text"
-                      value={textSettings.text}
-                      onChange={(e) =>
-                        setTextSettings((s) => ({ ...s, text: e.target.value }))
-                      }
-                      className={textField}
-                    />
-                  </label>
-
-                  <label htmlFor={fontId} className="flex flex-col gap-1">
-                    <span className={labelText}>Font</span>
-                    <select
-                      id={fontId}
-                      value={textSettings.fontFamily}
-                      onChange={(e) =>
-                        setTextSettings((s) => ({
-                          ...s,
-                          fontFamily: e.target.value,
-                        }))
-                      }
-                      className={selectField}
-                    >
-                      {FONT_OPTIONS.map((f) => (
-                        <option key={f.value} value={f.value}>
-                          {f.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label htmlFor={colorId} className="flex flex-col gap-1">
-                    <span className={labelText}>Color</span>
-                    <input
-                      id={colorId}
-                      type="color"
-                      value={textSettings.color}
-                      onChange={(e) =>
-                        setTextSettings((s) => ({
-                          ...s,
-                          color: e.target.value,
-                        }))
-                      }
-                      className="border-border-strong h-10 w-full rounded-md border"
-                    />
-                  </label>
-
-                  <div className="flex items-center gap-4">
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={textSettings.bold}
-                        onChange={(e) =>
-                          setTextSettings((s) => ({
-                            ...s,
-                            bold: e.target.checked,
-                          }))
-                        }
-                      />
-                      Bold
-                    </label>
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={textSettings.italic}
-                        onChange={(e) =>
-                          setTextSettings((s) => ({
-                            ...s,
-                            italic: e.target.checked,
-                          }))
-                        }
-                      />
-                      Italic
-                    </label>
-                  </div>
-
-                  <div className="flex flex-col gap-2 sm:col-span-2">
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={textSettings.shadow}
-                        onChange={(e) =>
-                          setTextSettings((s) => ({
-                            ...s,
-                            shadow: e.target.checked,
-                          }))
-                        }
-                      />
-                      Drop shadow
-                    </label>
-                    {textSettings.shadow && (
-                      <div className="flex flex-wrap items-end gap-4 pl-6">
-                        <label
-                          htmlFor={shadowColorId}
-                          className="flex flex-col gap-1"
-                        >
-                          <span className={labelText}>Shadow color</span>
-                          <input
-                            id={shadowColorId}
-                            type="color"
-                            value={textSettings.shadowColor}
-                            onChange={(e) =>
-                              setTextSettings((s) => ({
-                                ...s,
-                                shadowColor: e.target.value,
-                              }))
-                            }
-                            className="border-border-strong h-9 w-16 rounded-md border"
-                          />
-                        </label>
-                        <label
-                          htmlFor={shadowBlurId}
-                          className="flex flex-col gap-1"
-                        >
-                          <span className={labelText}>
-                            Blur: {textSettings.shadowBlur}px
-                          </span>
-                          <input
-                            id={shadowBlurId}
-                            type="range"
-                            min={0}
-                            max={20}
-                            value={textSettings.shadowBlur}
-                            onChange={(e) =>
-                              setTextSettings((s) => ({
-                                ...s,
-                                shadowBlur: Number(e.target.value),
-                              }))
-                            }
-                            className="accent-accent"
-                          />
-                        </label>
-                      </div>
-                    )}
-                  </div>
+          {file && workingSize && originalDimensions && !selectError && (
+            <>
+              <dl className="text-text-muted flex flex-wrap gap-x-6 gap-y-1 text-sm">
+                <div className="flex gap-1">
+                  <dt className="font-medium">File</dt>
+                  <dd>{file.name}</dd>
                 </div>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  <label htmlFor={logoInputId} className={labelText}>
-                    Logo image (PNG with transparency recommended)
-                  </label>
-                  <input
-                    ref={logoInputRef}
-                    id={logoInputId}
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp,image/bmp,image/gif"
-                    onChange={handleLogoChange}
-                    className="text-text-muted file:bg-bg-elevated file:text-text file:border-border-strong hover:file:bg-bg-sunken text-sm file:mr-3 file:cursor-pointer file:rounded-md file:border file:px-3 file:py-2 file:text-sm file:font-medium"
-                  />
-                  {logoError && (
-                    <StatusMessage tone="error">{logoError}</StatusMessage>
-                  )}
-                  {logoName && !logoError && (
-                    <p className="text-text-muted text-sm">Using: {logoName}</p>
-                  )}
+                <div className="flex gap-1">
+                  <dt className="font-medium">Dimensions</dt>
+                  <dd>
+                    {originalDimensions.width}×{originalDimensions.height}px
+                  </dd>
                 </div>
-              )}
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label htmlFor={scaleId} className="flex flex-col gap-1">
-                  <span className={labelText}>
-                    Size: {style.scalePercent}% of image width
-                  </span>
-                  <input
-                    id={scaleId}
-                    type="range"
-                    min={2}
-                    max={95}
-                    value={style.scalePercent}
-                    onChange={(e) =>
-                      setStyle((s) => ({
-                        ...s,
-                        scalePercent: Number(e.target.value),
-                      }))
-                    }
-                    className="accent-accent"
-                  />
-                </label>
-                <label htmlFor={opacityId} className="flex flex-col gap-1">
-                  <span className={labelText}>
-                    Opacity: {style.opacityPercent}%
-                  </span>
-                  <input
-                    id={opacityId}
-                    type="range"
-                    min={5}
-                    max={100}
-                    value={style.opacityPercent}
-                    onChange={(e) =>
-                      setStyle((s) => ({
-                        ...s,
-                        opacityPercent: Number(e.target.value),
-                      }))
-                    }
-                    className="accent-accent"
-                  />
-                </label>
-                <label htmlFor={rotationId} className="flex flex-col gap-1">
-                  <span className={labelText}>
-                    Rotation: {layout.rotationDeg}°
-                  </span>
-                  <input
-                    id={rotationId}
-                    type="range"
-                    min={-180}
-                    max={180}
-                    value={layout.rotationDeg}
-                    onChange={(e) =>
-                      setLayout((l) => ({
-                        ...l,
-                        rotationDeg: Number(e.target.value),
-                      }))
-                    }
-                    className="accent-accent"
-                  />
-                </label>
-                {isRepeatingPreset(layout.preset) ? (
-                  <label htmlFor={spacingId} className="flex flex-col gap-1">
-                    <span className={labelText}>
-                      Spacing: {Math.round(layout.tileSpacingFraction * 100)}%
-                    </span>
-                    <input
-                      id={spacingId}
-                      type="range"
-                      min={1}
-                      max={40}
-                      value={Math.round(layout.tileSpacingFraction * 100)}
-                      onChange={(e) =>
-                        setLayout((l) => ({
-                          ...l,
-                          tileSpacingFraction: Number(e.target.value) / 100,
-                        }))
-                      }
-                      className="accent-accent"
-                    />
-                  </label>
-                ) : (
-                  <label htmlFor={paddingId} className="flex flex-col gap-1">
-                    <span className={labelText}>
-                      Edge padding: {Math.round(layout.paddingFraction * 100)}%
-                    </span>
-                    <input
-                      id={paddingId}
-                      type="range"
-                      min={0}
-                      max={20}
-                      value={Math.round(layout.paddingFraction * 100)}
-                      onChange={(e) =>
-                        setLayout((l) => ({
-                          ...l,
-                          paddingFraction: Number(e.target.value) / 100,
-                        }))
-                      }
-                      className="accent-accent"
-                    />
-                  </label>
-                )}
-              </div>
-
-              <fieldset className="flex flex-col gap-2">
-                <legend className={labelText}>Position preset</legend>
-                <div className="flex flex-wrap gap-2">
-                  {POSITION_PRESETS.map((p) => (
-                    <button
-                      key={p.value}
-                      type="button"
-                      aria-pressed={layout.preset === p.value}
-                      onClick={() =>
-                        setLayout((l) => ({
-                          ...l,
-                          preset: p.value as PositionPreset,
-                        }))
-                      }
-                      className={
-                        layout.preset === p.value
-                          ? buttonSecondary
-                          : buttonGhost
-                      }
-                    >
-                      {p.label}
-                    </button>
-                  ))}
+                <div className="flex gap-1">
+                  <dt className="font-medium">Size</dt>
+                  <dd>{formatBytes(file.size)}</dd>
                 </div>
-              </fieldset>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4">
+              </dl>
+
               <div
                 role="tablist"
-                aria-label="Repair method"
+                aria-label="Editing mode"
                 className="border-border-strong inline-flex w-fit gap-1 rounded-md border p-1"
               >
                 <button
                   type="button"
                   role="tab"
-                  aria-selected={repairMethod === "ai"}
-                  onClick={() => setRepairMethod("ai")}
-                  className={
-                    repairMethod === "ai" ? buttonPrimary : buttonGhost
-                  }
+                  aria-selected={mode === "watermark"}
+                  onClick={() => setMode("watermark")}
+                  className={mode === "watermark" ? buttonPrimary : buttonGhost}
                 >
-                  AI removal (recommended)
+                  Add watermark
                 </button>
                 <button
                   type="button"
                   role="tab"
-                  aria-selected={repairMethod === "quick"}
-                  onClick={() => setRepairMethod("quick")}
-                  className={
-                    repairMethod === "quick" ? buttonPrimary : buttonGhost
-                  }
+                  aria-selected={mode === "repair"}
+                  onClick={() => setMode("repair")}
+                  className={mode === "repair" ? buttonPrimary : buttonGhost}
                 >
-                  Quick repair
+                  Remove / repair
                 </button>
               </div>
 
-              {repairMethod === "ai" ? (
-                <>
-                  {!aiSession ? (
-                    <div className="flex flex-col gap-3">
-                      <StatusMessage tone="neutral">
-                        AI removal uses a local inpainting model (LaMa,{" "}
-                        {MODEL_LICENSE}) downloaded from Hugging Face the first
-                        time you use it — about{" "}
-                        {formatBytes(MODEL_APPROX_BYTES)}, cached in this
-                        browser afterward so it won&apos;t download again. Your
-                        image is never uploaded; only the public model file is
-                        downloaded.
-                      </StatusMessage>
-                      {lowMemoryDevice && (
-                        <StatusMessage tone="neutral">
-                          This device reports limited memory — loading the AI
-                          model may be slow or fail. Quick repair is a
-                          lighter-weight fallback if that happens.
-                        </StatusMessage>
+              {mode === "repair" && (
+                <StatusMessage tone="neutral">
+                  <strong className="font-medium">
+                    Only use this on images you own or have permission to edit
+                  </strong>
+                  {
+                    " — for example, removing your own watermark, timestamps, dust, or blemishes. Don't use it to remove ownership marks, watermarks, or credits from images that aren't yours."
+                  }
+                </StatusMessage>
+              )}
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleZoomOut}
+                  className={buttonGhost}
+                  aria-label="Zoom out"
+                >
+                  −
+                </button>
+                <span className="text-text-muted w-14 text-center text-sm">
+                  {Math.round(zoom * 100)}%
+                </span>
+                <button
+                  type="button"
+                  onClick={handleZoomIn}
+                  className={buttonGhost}
+                  aria-label="Zoom in"
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  onClick={handleFit}
+                  className={buttonGhost}
+                >
+                  Fit
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={panActive}
+                  onClick={() => setPanActive((v) => !v)}
+                  className={panActive ? buttonSecondary : buttonGhost}
+                >
+                  Pan tool
+                </button>
+                {mode === "repair" && (
+                  <button
+                    type="button"
+                    aria-pressed={showOriginal}
+                    onClick={() => setShowOriginal((v) => !v)}
+                    className={showOriginal ? buttonSecondary : buttonGhost}
+                  >
+                    {showOriginal ? "Showing original" : "Show original"}
+                  </button>
+                )}
+              </div>
+
+              <div
+                className="border-border-strong bg-bg-sunken relative min-h-[360px] flex-1 overflow-hidden rounded-md border"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(45deg, rgba(128,128,128,0.15) 25%, transparent 25%), linear-gradient(-45deg, rgba(128,128,128,0.15) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, rgba(128,128,128,0.15) 75%), linear-gradient(-45deg, transparent 75%, rgba(128,128,128,0.15) 75%)",
+                  backgroundSize: "20px 20px",
+                  backgroundPosition: "0 0, 0 10px, 10px -10px, -10px 0px",
+                }}
+              >
+                <div
+                  ref={containerRef}
+                  className="relative h-full w-full overflow-hidden"
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                      transformOrigin: "0 0",
+                    }}
+                  >
+                    <canvas
+                      ref={canvasRef}
+                      role="img"
+                      aria-label={
+                        mode === "watermark"
+                          ? "Watermark preview. Use the position controls to place the watermark."
+                          : "Repair preview. Use the brush, box, or lasso tool to select an area to repair."
+                      }
+                      className={canvasCursor}
+                      style={{ display: "block", touchAction: "none" }}
+                      onPointerDown={handleCanvasPointerDown}
+                      onPointerMove={handleCanvasPointerMove}
+                      onPointerUp={handleCanvasPointerUp}
+                      onPointerCancel={handleCanvasPointerUp}
+                    />
+                    {mode === "watermark" &&
+                      !panActive &&
+                      hasRenderableWatermark &&
+                      overlayCenterPx &&
+                      contentSizeWorking &&
+                      workingSize && (
+                        <WatermarkOverlay
+                          centerPx={overlayCenterPx}
+                          sizePx={contentSizeWorking}
+                          rotationDeg={layout.rotationDeg}
+                          workingSize={workingSize}
+                          containerRef={containerRef}
+                          zoom={zoom}
+                          pan={pan}
+                          scalePercent={style.scalePercent}
+                          onMove={handleOverlayMove}
+                          onResizeScalePercent={handleOverlayResize}
+                        />
                       )}
-                      <div>
-                        <button
-                          type="button"
-                          onClick={handleLoadModel}
-                          disabled={isLoadingModel}
-                          className={buttonPrimary}
-                        >
-                          {isLoadingModel
-                            ? "Loading AI model…"
-                            : `Load AI model (${formatBytes(MODEL_APPROX_BYTES)})`}
-                        </button>
-                      </div>
-                      {isLoadingModel && (
-                        <div className="flex flex-col gap-1">
-                          <div className="bg-bg-sunken h-2 overflow-hidden rounded-full">
-                            <div
-                              className="bg-accent h-full transition-[width]"
-                              style={{ width: `${modelLoadPercent}%` }}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </>
+      }
+      side={
+        file &&
+        workingSize &&
+        originalDimensions &&
+        !selectError && (
+          <>
+            {mode === "watermark" ? (
+              <div className="flex flex-col gap-4">
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    aria-pressed={watermarkType === "text"}
+                    onClick={() => setWatermarkType("text")}
+                    className={
+                      watermarkType === "text" ? buttonSecondary : buttonGhost
+                    }
+                  >
+                    Text watermark
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={watermarkType === "image"}
+                    onClick={() => setWatermarkType("image")}
+                    className={
+                      watermarkType === "image" ? buttonSecondary : buttonGhost
+                    }
+                  >
+                    Logo image watermark
+                  </button>
+                </div>
+
+                {watermarkType === "text" ? (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label
+                      htmlFor={textId}
+                      className="flex flex-col gap-1 sm:col-span-2"
+                    >
+                      <span className={labelText}>Watermark text</span>
+                      <input
+                        id={textId}
+                        type="text"
+                        value={textSettings.text}
+                        onChange={(e) =>
+                          setTextSettings((s) => ({
+                            ...s,
+                            text: e.target.value,
+                          }))
+                        }
+                        className={textField}
+                      />
+                    </label>
+
+                    <label htmlFor={fontId} className="flex flex-col gap-1">
+                      <span className={labelText}>Font</span>
+                      <select
+                        id={fontId}
+                        value={textSettings.fontFamily}
+                        onChange={(e) =>
+                          setTextSettings((s) => ({
+                            ...s,
+                            fontFamily: e.target.value,
+                          }))
+                        }
+                        className={selectField}
+                      >
+                        {FONT_OPTIONS.map((f) => (
+                          <option key={f.value} value={f.value}>
+                            {f.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label htmlFor={colorId} className="flex flex-col gap-1">
+                      <span className={labelText}>Color</span>
+                      <input
+                        id={colorId}
+                        type="color"
+                        value={textSettings.color}
+                        onChange={(e) =>
+                          setTextSettings((s) => ({
+                            ...s,
+                            color: e.target.value,
+                          }))
+                        }
+                        className="border-border-strong h-10 w-full rounded-md border"
+                      />
+                    </label>
+
+                    <div className="flex items-center gap-4">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={textSettings.bold}
+                          onChange={(e) =>
+                            setTextSettings((s) => ({
+                              ...s,
+                              bold: e.target.checked,
+                            }))
+                          }
+                        />
+                        Bold
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={textSettings.italic}
+                          onChange={(e) =>
+                            setTextSettings((s) => ({
+                              ...s,
+                              italic: e.target.checked,
+                            }))
+                          }
+                        />
+                        Italic
+                      </label>
+                    </div>
+
+                    <div className="flex flex-col gap-2 sm:col-span-2">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={textSettings.shadow}
+                          onChange={(e) =>
+                            setTextSettings((s) => ({
+                              ...s,
+                              shadow: e.target.checked,
+                            }))
+                          }
+                        />
+                        Drop shadow
+                      </label>
+                      {textSettings.shadow && (
+                        <div className="flex flex-wrap items-end gap-4 pl-6">
+                          <label
+                            htmlFor={shadowColorId}
+                            className="flex flex-col gap-1"
+                          >
+                            <span className={labelText}>Shadow color</span>
+                            <input
+                              id={shadowColorId}
+                              type="color"
+                              value={textSettings.shadowColor}
+                              onChange={(e) =>
+                                setTextSettings((s) => ({
+                                  ...s,
+                                  shadowColor: e.target.value,
+                                }))
+                              }
+                              className="border-border-strong h-9 w-16 rounded-md border"
                             />
-                          </div>
-                          <p className="text-text-muted text-sm" role="status">
-                            {modelLoadProgress?.fromCache
-                              ? "Loading cached model…"
-                              : `${formatBytes(modelLoadProgress?.loadedBytes ?? 0)} / ${formatBytes(modelLoadProgress?.totalBytes ?? MODEL_APPROX_BYTES)}`}
-                          </p>
+                          </label>
+                          <label
+                            htmlFor={shadowBlurId}
+                            className="flex flex-col gap-1"
+                          >
+                            <span className={labelText}>
+                              Blur: {textSettings.shadowBlur}px
+                            </span>
+                            <input
+                              id={shadowBlurId}
+                              type="range"
+                              min={0}
+                              max={20}
+                              value={textSettings.shadowBlur}
+                              onChange={(e) =>
+                                setTextSettings((s) => ({
+                                  ...s,
+                                  shadowBlur: Number(e.target.value),
+                                }))
+                              }
+                              className="accent-accent"
+                            />
+                          </label>
                         </div>
                       )}
-                      {modelLoadError && (
-                        <StatusMessage tone="error">
-                          {modelLoadError}
-                        </StatusMessage>
-                      )}
                     </div>
-                  ) : (
-                    <StatusMessage tone="success">
-                      AI model ready — running on{" "}
-                      {aiBackend === "webgpu"
-                        ? "your GPU (WebGPU)"
-                        : "CPU (WebAssembly) — this browser doesn't support WebGPU, so removal will be slower"}
-                      .
-                    </StatusMessage>
-                  )}
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor={logoInputId} className={labelText}>
+                      Logo image (PNG with transparency recommended)
+                    </label>
+                    <input
+                      ref={logoInputRef}
+                      id={logoInputId}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/bmp,image/gif"
+                      onChange={handleLogoChange}
+                      className="text-text-muted file:bg-bg-elevated file:text-text file:border-border-strong hover:file:bg-bg-sunken text-sm file:mr-3 file:cursor-pointer file:rounded-md file:border file:px-3 file:py-2 file:text-sm file:font-medium"
+                    />
+                    {logoError && (
+                      <StatusMessage tone="error">{logoError}</StatusMessage>
+                    )}
+                    {logoName && !logoError && (
+                      <p className="text-text-muted text-sm">
+                        Using: {logoName}
+                      </p>
+                    )}
+                  </div>
+                )}
 
-                  <fieldset className="flex flex-col gap-2">
-                    <legend className={labelText}>Selection tool</legend>
-                    <div className="flex flex-wrap gap-2">
-                      {(
-                        [
-                          { value: "add-brush", label: "Brush" },
-                          { value: "add-box", label: "Box select" },
-                          { value: "erase", label: "Erase selection" },
-                        ] as { value: AISelectionTool; label: string }[]
-                      ).map((t) => (
-                        <button
-                          key={t.value}
-                          type="button"
-                          aria-pressed={aiSelectionTool === t.value}
-                          onClick={() => setAiSelectionTool(t.value)}
-                          className={
-                            aiSelectionTool === t.value
-                              ? buttonSecondary
-                              : buttonGhost
-                          }
-                        >
-                          {t.label}
-                        </button>
-                      ))}
-                    </div>
-                  </fieldset>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <label htmlFor={brushId} className="flex flex-col gap-1">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label htmlFor={scaleId} className="flex flex-col gap-1">
+                    <span className={labelText}>
+                      Size: {style.scalePercent}% of image width
+                    </span>
+                    <input
+                      id={scaleId}
+                      type="range"
+                      min={2}
+                      max={95}
+                      value={style.scalePercent}
+                      onChange={(e) =>
+                        setStyle((s) => ({
+                          ...s,
+                          scalePercent: Number(e.target.value),
+                        }))
+                      }
+                      className="accent-accent"
+                    />
+                  </label>
+                  <label htmlFor={opacityId} className="flex flex-col gap-1">
+                    <span className={labelText}>
+                      Opacity: {style.opacityPercent}%
+                    </span>
+                    <input
+                      id={opacityId}
+                      type="range"
+                      min={5}
+                      max={100}
+                      value={style.opacityPercent}
+                      onChange={(e) =>
+                        setStyle((s) => ({
+                          ...s,
+                          opacityPercent: Number(e.target.value),
+                        }))
+                      }
+                      className="accent-accent"
+                    />
+                  </label>
+                  <label htmlFor={rotationId} className="flex flex-col gap-1">
+                    <span className={labelText}>
+                      Rotation: {layout.rotationDeg}°
+                    </span>
+                    <input
+                      id={rotationId}
+                      type="range"
+                      min={-180}
+                      max={180}
+                      value={layout.rotationDeg}
+                      onChange={(e) =>
+                        setLayout((l) => ({
+                          ...l,
+                          rotationDeg: Number(e.target.value),
+                        }))
+                      }
+                      className="accent-accent"
+                    />
+                  </label>
+                  {isRepeatingPreset(layout.preset) ? (
+                    <label htmlFor={spacingId} className="flex flex-col gap-1">
                       <span className={labelText}>
-                        Brush size: {brushRadiusPercent}%
+                        Spacing: {Math.round(layout.tileSpacingFraction * 100)}%
                       </span>
                       <input
-                        id={brushId}
+                        id={spacingId}
                         type="range"
-                        min={0.5}
-                        max={20}
-                        step={0.5}
-                        value={brushRadiusPercent}
+                        min={1}
+                        max={40}
+                        value={Math.round(layout.tileSpacingFraction * 100)}
                         onChange={(e) =>
-                          setBrushRadiusPercent(Number(e.target.value))
+                          setLayout((l) => ({
+                            ...l,
+                            tileSpacingFraction: Number(e.target.value) / 100,
+                          }))
                         }
                         className="accent-accent"
-                        disabled={aiSelectionTool === "add-box"}
                       />
                     </label>
-                    <label htmlFor={featherId} className="flex flex-col gap-1">
+                  ) : (
+                    <label htmlFor={paddingId} className="flex flex-col gap-1">
                       <span className={labelText}>
-                        Feather: {featherPercent}%
+                        Edge padding: {Math.round(layout.paddingFraction * 100)}
+                        %
                       </span>
                       <input
-                        id={featherId}
+                        id={paddingId}
                         type="range"
                         min={0}
-                        max={10}
-                        step={0.5}
-                        value={featherPercent}
+                        max={20}
+                        value={Math.round(layout.paddingFraction * 100)}
                         onChange={(e) =>
-                          setFeatherPercent(Number(e.target.value))
+                          setLayout((l) => ({
+                            ...l,
+                            paddingFraction: Number(e.target.value) / 100,
+                          }))
                         }
                         className="accent-accent"
                       />
                     </label>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={handleUndoSelection}
-                      disabled={!canUndo(pendingHistory)}
-                      className={buttonGhost}
-                    >
-                      Undo selection
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleRedoSelection}
-                      disabled={!canRedo(pendingHistory)}
-                      className={buttonGhost}
-                    >
-                      Redo selection
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleClearSelection}
-                      disabled={pendingStrokes.length === 0}
-                      className={buttonGhost}
-                    >
-                      Clear selection
-                    </button>
-                  </div>
-
-                  {removeError && (
-                    <StatusMessage tone="error">{removeError}</StatusMessage>
                   )}
+                </div>
 
-                  <div>
-                    <button
-                      type="button"
-                      onClick={handleRemove}
-                      disabled={
-                        !aiSession || isRemoving || pendingStrokes.length === 0
-                      }
-                      className={buttonPrimary}
-                    >
-                      {isRemoving
-                        ? removeProgress
-                          ? `Removing… (${removeProgress.instance}/${removeProgress.instanceCount})`
-                          : "Removing…"
-                        : "Remove"}
-                    </button>
+                <fieldset className="flex flex-col gap-2">
+                  <legend className={labelText}>Position preset</legend>
+                  <div className="flex flex-wrap gap-2">
+                    {POSITION_PRESETS.map((p) => (
+                      <button
+                        key={p.value}
+                        type="button"
+                        aria-pressed={layout.preset === p.value}
+                        onClick={() =>
+                          setLayout((l) => ({
+                            ...l,
+                            preset: p.value as PositionPreset,
+                          }))
+                        }
+                        className={
+                          layout.preset === p.value
+                            ? buttonSecondary
+                            : buttonGhost
+                        }
+                      >
+                        {p.label}
+                      </button>
+                    ))}
                   </div>
-                </>
-              ) : (
-                <>
-                  <fieldset className="flex flex-col gap-2">
-                    <legend className={labelText}>Repair tool</legend>
-                    <div className="flex flex-wrap gap-2">
-                      {(["brush", "box", "lasso", "clone"] as RepairTool[]).map(
-                        (t) => (
+                </fieldset>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <div
+                  role="tablist"
+                  aria-label="Repair method"
+                  className="border-border-strong inline-flex w-fit gap-1 rounded-md border p-1"
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={repairMethod === "ai"}
+                    onClick={() => setRepairMethod("ai")}
+                    className={
+                      repairMethod === "ai" ? buttonPrimary : buttonGhost
+                    }
+                  >
+                    AI removal (recommended)
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={repairMethod === "quick"}
+                    onClick={() => setRepairMethod("quick")}
+                    className={
+                      repairMethod === "quick" ? buttonPrimary : buttonGhost
+                    }
+                  >
+                    Quick repair
+                  </button>
+                </div>
+
+                {repairMethod === "ai" ? (
+                  <>
+                    {!aiSession ? (
+                      <div className="flex flex-col gap-3">
+                        <StatusMessage tone="neutral">
+                          AI removal uses a local inpainting model (LaMa,{" "}
+                          {MODEL_LICENSE}) downloaded from Hugging Face the
+                          first time you use it — about{" "}
+                          {formatBytes(MODEL_APPROX_BYTES)}, cached in this
+                          browser afterward so it won&apos;t download again.
+                          Your image is never uploaded; only the public model
+                          file is downloaded.
+                        </StatusMessage>
+                        {lowMemoryDevice && (
+                          <StatusMessage tone="neutral">
+                            This device reports limited memory — loading the AI
+                            model may be slow or fail. Quick repair is a
+                            lighter-weight fallback if that happens.
+                          </StatusMessage>
+                        )}
+                        <div>
+                          <button
+                            type="button"
+                            onClick={handleLoadModel}
+                            disabled={isLoadingModel}
+                            className={buttonPrimary}
+                          >
+                            {isLoadingModel
+                              ? "Loading AI model…"
+                              : `Load AI model (${formatBytes(MODEL_APPROX_BYTES)})`}
+                          </button>
+                        </div>
+                        {isLoadingModel && (
+                          <div className="flex flex-col gap-1">
+                            <div className="bg-bg-sunken h-2 overflow-hidden rounded-full">
+                              <div
+                                className="bg-accent h-full transition-[width]"
+                                style={{ width: `${modelLoadPercent}%` }}
+                              />
+                            </div>
+                            <p
+                              className="text-text-muted text-sm"
+                              role="status"
+                            >
+                              {modelLoadProgress?.fromCache
+                                ? "Loading cached model…"
+                                : `${formatBytes(modelLoadProgress?.loadedBytes ?? 0)} / ${formatBytes(modelLoadProgress?.totalBytes ?? MODEL_APPROX_BYTES)}`}
+                            </p>
+                          </div>
+                        )}
+                        {modelLoadError && (
+                          <StatusMessage tone="error">
+                            {modelLoadError}
+                          </StatusMessage>
+                        )}
+                      </div>
+                    ) : (
+                      <StatusMessage tone="success">
+                        AI model ready — running on{" "}
+                        {aiBackend === "webgpu"
+                          ? "your GPU (WebGPU)"
+                          : "CPU (WebAssembly) — this browser doesn't support WebGPU, so removal will be slower"}
+                        .
+                      </StatusMessage>
+                    )}
+
+                    <fieldset className="flex flex-col gap-2">
+                      <legend className={labelText}>Selection tool</legend>
+                      <div className="flex flex-wrap gap-2">
+                        {(
+                          [
+                            { value: "add-brush", label: "Brush" },
+                            { value: "add-box", label: "Box select" },
+                            { value: "erase", label: "Erase selection" },
+                          ] as { value: AISelectionTool; label: string }[]
+                        ).map((t) => (
+                          <button
+                            key={t.value}
+                            type="button"
+                            aria-pressed={aiSelectionTool === t.value}
+                            onClick={() => setAiSelectionTool(t.value)}
+                            className={
+                              aiSelectionTool === t.value
+                                ? buttonSecondary
+                                : buttonGhost
+                            }
+                          >
+                            {t.label}
+                          </button>
+                        ))}
+                      </div>
+                    </fieldset>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <label htmlFor={brushId} className="flex flex-col gap-1">
+                        <span className={labelText}>
+                          Brush size: {brushRadiusPercent}%
+                        </span>
+                        <input
+                          id={brushId}
+                          type="range"
+                          min={0.5}
+                          max={20}
+                          step={0.5}
+                          value={brushRadiusPercent}
+                          onChange={(e) =>
+                            setBrushRadiusPercent(Number(e.target.value))
+                          }
+                          className="accent-accent"
+                          disabled={aiSelectionTool === "add-box"}
+                        />
+                      </label>
+                      <label
+                        htmlFor={featherId}
+                        className="flex flex-col gap-1"
+                      >
+                        <span className={labelText}>
+                          Feather: {featherPercent}%
+                        </span>
+                        <input
+                          id={featherId}
+                          type="range"
+                          min={0}
+                          max={10}
+                          step={0.5}
+                          value={featherPercent}
+                          onChange={(e) =>
+                            setFeatherPercent(Number(e.target.value))
+                          }
+                          className="accent-accent"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handleUndoSelection}
+                        disabled={!canUndo(pendingHistory)}
+                        className={buttonGhost}
+                      >
+                        Undo selection
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleRedoSelection}
+                        disabled={!canRedo(pendingHistory)}
+                        className={buttonGhost}
+                      >
+                        Redo selection
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleClearSelection}
+                        disabled={pendingStrokes.length === 0}
+                        className={buttonGhost}
+                      >
+                        Clear selection
+                      </button>
+                    </div>
+
+                    {removeError && (
+                      <StatusMessage tone="error">{removeError}</StatusMessage>
+                    )}
+
+                    <div>
+                      <button
+                        type="button"
+                        onClick={handleRemove}
+                        disabled={
+                          !aiSession ||
+                          isRemoving ||
+                          pendingStrokes.length === 0
+                        }
+                        className={buttonPrimary}
+                      >
+                        {isRemoving
+                          ? removeProgress
+                            ? `Removing… (${removeProgress.instance}/${removeProgress.instanceCount})`
+                            : "Removing…"
+                          : "Remove"}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <fieldset className="flex flex-col gap-2">
+                      <legend className={labelText}>Repair tool</legend>
+                      <div className="flex flex-wrap gap-2">
+                        {(
+                          ["brush", "box", "lasso", "clone"] as RepairTool[]
+                        ).map((t) => (
                           <button
                             key={t}
                             type="button"
@@ -1799,187 +1831,197 @@ export default function ImageWatermarkStudioTool() {
                             {t === "lasso" && "Lasso"}
                             {t === "clone" && "Clone stamp"}
                           </button>
-                        ),
-                      )}
-                    </div>
-                  </fieldset>
+                        ))}
+                      </div>
+                    </fieldset>
 
-                  {repairTool === "clone" && (
-                    <div className="flex flex-wrap items-center gap-3">
-                      <button
-                        type="button"
-                        aria-pressed={settingCloneSource}
-                        onClick={() => setSettingCloneSource((v) => !v)}
-                        className={
-                          settingCloneSource ? buttonSecondary : buttonGhost
-                        }
+                    {repairTool === "clone" && (
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          type="button"
+                          aria-pressed={settingCloneSource}
+                          onClick={() => setSettingCloneSource((v) => !v)}
+                          className={
+                            settingCloneSource ? buttonSecondary : buttonGhost
+                          }
+                        >
+                          {settingCloneSource
+                            ? "Click the source point…"
+                            : "Set source point"}
+                        </button>
+                        <span className="text-text-muted text-sm">
+                          {cloneSourcePoint
+                            ? "Source set — paint over the area to repair."
+                            : "Set a source point before painting."}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <label htmlFor={brushId} className="flex flex-col gap-1">
+                        <span className={labelText}>
+                          Brush size: {brushRadiusPercent}%
+                        </span>
+                        <input
+                          id={brushId}
+                          type="range"
+                          min={0.5}
+                          max={20}
+                          step={0.5}
+                          value={brushRadiusPercent}
+                          onChange={(e) =>
+                            setBrushRadiusPercent(Number(e.target.value))
+                          }
+                          className="accent-accent"
+                          disabled={
+                            repairTool === "box" || repairTool === "lasso"
+                          }
+                        />
+                      </label>
+                      <label
+                        htmlFor={featherId}
+                        className="flex flex-col gap-1"
                       >
-                        {settingCloneSource
-                          ? "Click the source point…"
-                          : "Set source point"}
-                      </button>
-                      <span className="text-text-muted text-sm">
-                        {cloneSourcePoint
-                          ? "Source set — paint over the area to repair."
-                          : "Set a source point before painting."}
-                      </span>
+                        <span className={labelText}>
+                          Feather: {featherPercent}%
+                        </span>
+                        <input
+                          id={featherId}
+                          type="range"
+                          min={0}
+                          max={10}
+                          step={0.5}
+                          value={featherPercent}
+                          onChange={(e) =>
+                            setFeatherPercent(Number(e.target.value))
+                          }
+                          className="accent-accent"
+                        />
+                      </label>
                     </div>
-                  )}
+                  </>
+                )}
 
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <label htmlFor={brushId} className="flex flex-col gap-1">
-                      <span className={labelText}>
-                        Brush size: {brushRadiusPercent}%
-                      </span>
-                      <input
-                        id={brushId}
-                        type="range"
-                        min={0.5}
-                        max={20}
-                        step={0.5}
-                        value={brushRadiusPercent}
-                        onChange={(e) =>
-                          setBrushRadiusPercent(Number(e.target.value))
-                        }
-                        className="accent-accent"
-                        disabled={
-                          repairTool === "box" || repairTool === "lasso"
-                        }
-                      />
-                    </label>
-                    <label htmlFor={featherId} className="flex flex-col gap-1">
-                      <span className={labelText}>
-                        Feather: {featherPercent}%
-                      </span>
-                      <input
-                        id={featherId}
-                        type="range"
-                        min={0}
-                        max={10}
-                        step={0.5}
-                        value={featherPercent}
-                        onChange={(e) =>
-                          setFeatherPercent(Number(e.target.value))
-                        }
-                        className="accent-accent"
-                      />
-                    </label>
-                  </div>
-                </>
-              )}
-
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={handleUndo}
-                  disabled={!canUndo(commitsHistory)}
-                  className={buttonGhost}
-                >
-                  Undo
-                </button>
-                <button
-                  type="button"
-                  onClick={handleRedo}
-                  disabled={!canRedo(commitsHistory)}
-                  className={buttonGhost}
-                >
-                  Redo
-                </button>
-                <span className="text-text-muted text-sm">
-                  {commits.length} repair{" "}
-                  {commits.length === 1 ? "edit" : "edits"}
-                </span>
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleUndo}
+                    disabled={!canUndo(commitsHistory)}
+                    className={buttonGhost}
+                  >
+                    Undo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRedo}
+                    disabled={!canRedo(commitsHistory)}
+                    className={buttonGhost}
+                  >
+                    Redo
+                  </button>
+                  <span className="text-text-muted text-sm">
+                    {commits.length} repair{" "}
+                    {commits.length === 1 ? "edit" : "edits"}
+                  </span>
+                </div>
               </div>
-            </div>
-          )}
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label htmlFor={formatId} className="flex flex-col gap-1">
-              <span className={labelText}>Output format</span>
-              <select
-                id={formatId}
-                value={outputFormat}
-                onChange={(e) =>
-                  setOutputFormat(e.target.value as OutputFormat)
-                }
-                className={selectField}
-              >
-                {OUTPUT_FORMATS.map((f) => (
-                  <option key={f.value} value={f.value}>
-                    {f.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {outputFormat !== "image/png" && (
-              <label htmlFor={qualityId} className="flex flex-col gap-1">
-                <span className={labelText}>Quality: {qualityPercent}%</span>
-                <input
-                  id={qualityId}
-                  type="range"
-                  min={1}
-                  max={100}
-                  value={qualityPercent}
-                  onChange={(e) => setQualityPercent(Number(e.target.value))}
-                  className="accent-accent"
-                />
-              </label>
             )}
-          </div>
 
-          {outputFormat === "image/jpeg" && (
-            <StatusMessage tone="neutral">
-              JPEG doesn&apos;t support transparency — any transparent areas
-              will be filled white.
-            </StatusMessage>
-          )}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label htmlFor={formatId} className="flex flex-col gap-1">
+                <span className={labelText}>Output format</span>
+                <select
+                  id={formatId}
+                  value={outputFormat}
+                  onChange={(e) =>
+                    setOutputFormat(e.target.value as OutputFormat)
+                  }
+                  className={selectField}
+                >
+                  {OUTPUT_FORMATS.map((f) => (
+                    <option key={f.value} value={f.value}>
+                      {f.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {outputFormat !== "image/png" && (
+                <label htmlFor={qualityId} className="flex flex-col gap-1">
+                  <span className={labelText}>Quality: {qualityPercent}%</span>
+                  <input
+                    id={qualityId}
+                    type="range"
+                    min={1}
+                    max={100}
+                    value={qualityPercent}
+                    onChange={(e) => setQualityPercent(Number(e.target.value))}
+                    className="accent-accent"
+                  />
+                </label>
+              )}
+            </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={handleRender}
-              disabled={isExporting}
-              className={buttonPrimary}
-            >
-              {isExporting
-                ? "Rendering…"
-                : `Render full-resolution ${mode === "watermark" ? "watermarked" : "repaired"} image`}
-            </button>
-            <button type="button" onClick={handleReset} className={buttonGhost}>
-              Reset
-            </button>
-          </div>
-        </>
-      )}
+            {outputFormat === "image/jpeg" && (
+              <StatusMessage tone="neutral">
+                JPEG doesn&apos;t support transparency — any transparent areas
+                will be filled white.
+              </StatusMessage>
+            )}
 
-      {exportError && <StatusMessage tone="error">{exportError}</StatusMessage>}
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleRender}
+                disabled={isExporting}
+                className={buttonPrimary}
+              >
+                {isExporting
+                  ? "Rendering…"
+                  : `Render full-resolution ${mode === "watermark" ? "watermarked" : "repaired"} image`}
+              </button>
+              <button
+                type="button"
+                onClick={handleReset}
+                className={buttonGhost}
+              >
+                Reset
+              </button>
+            </div>
 
-      {result && !exportError && (
-        <div className="flex flex-col gap-3">
-          <img
-            src={result.url}
-            alt="Rendered result"
-            className="border-border-strong bg-bg-sunken h-48 w-48 rounded-md border object-contain"
-          />
-          <dl className="text-text-muted grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-            <dt className="font-medium">Output size</dt>
-            <dd>{formatBytes(result.blob.size)}</dd>
-            <dt className="font-medium">Dimensions</dt>
-            <dd>
-              {result.width}×{result.height}px
-            </dd>
-          </dl>
-          <div>
-            <button
-              type="button"
-              onClick={handleDownload}
-              className={buttonSecondary}
-            >
-              Download {mode === "watermark" ? "watermarked" : "repaired"} image
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+            {exportError && (
+              <StatusMessage tone="error">{exportError}</StatusMessage>
+            )}
+
+            {result && !exportError && (
+              <div className="flex flex-col gap-3">
+                <img
+                  src={result.url}
+                  alt="Rendered result"
+                  className="border-border-strong bg-bg-sunken h-48 w-48 rounded-md border object-contain"
+                />
+                <dl className="text-text-muted grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                  <dt className="font-medium">Output size</dt>
+                  <dd>{formatBytes(result.blob.size)}</dd>
+                  <dt className="font-medium">Dimensions</dt>
+                  <dd>
+                    {result.width}×{result.height}px
+                  </dd>
+                </dl>
+                <div>
+                  <button
+                    type="button"
+                    onClick={handleDownload}
+                    className={buttonSecondary}
+                  >
+                    Download {mode === "watermark" ? "watermarked" : "repaired"}{" "}
+                    image
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )
+      }
+    />
   );
 }

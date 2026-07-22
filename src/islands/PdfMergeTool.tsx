@@ -48,6 +48,8 @@ import {
 } from "@/components/react/styles";
 import { useDragReorder } from "@/islands/pdf-merge/useDragReorder";
 import { GroupRow } from "@/islands/pdf-merge/GroupRow";
+import { SplitPane } from "@/components/react/workspace/SplitPane";
+import { Panel } from "@/components/react/workspace/Panel";
 
 interface SourceFileMeta {
   id: string;
@@ -340,195 +342,214 @@ export default function PdfMergeTool() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <label htmlFor={fileInputId} className={labelText}>
-          PDF files
-        </label>
-        <div
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          className={`rounded-md border-2 border-dashed p-6 text-center transition-colors ${
-            isDropzoneActive
-              ? "border-accent bg-accent/5"
-              : "border-border-strong"
-          }`}
-        >
-          <p className="text-text-muted mb-2 text-sm">
-            Drag PDF files here, or choose files below
-          </p>
-          <input
-            ref={fileInputRef}
-            id={fileInputId}
-            type="file"
-            accept="application/pdf,.pdf"
-            multiple
-            disabled={isAddingFiles}
-            onChange={handleFileInputChange}
-            className="text-text-muted file:bg-bg-elevated file:text-text file:border-border-strong hover:file:bg-bg-sunken mx-auto text-sm file:mr-3 file:cursor-pointer file:rounded-md file:border file:px-3 file:py-2 file:text-sm file:font-medium"
-          />
-        </div>
-      </div>
-
-      {isAddingFiles && addFilesStatus && (
-        <StatusMessage tone="neutral">{addFilesStatus}</StatusMessage>
-      )}
-
-      {fileErrors.length > 0 && (
-        <StatusMessage tone="error">
-          <ul className="list-disc space-y-1 pl-4">
-            {fileErrors.map((message, i) => (
-              <li key={i}>{message}</li>
-            ))}
-          </ul>
-        </StatusMessage>
-      )}
-
-      {groupOrder.length > 0 && (
+    <SplitPane
+      main={
         <>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-text text-sm font-medium">
-              {groupOrder.length} file{groupOrder.length === 1 ? "" : "s"} ·{" "}
-              {pageTotal} page{pageTotal === 1 ? "" : "s"} total
-            </h2>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={handleUndo}
-                disabled={!canUndo(history)}
-                className={buttonGhost}
-              >
-                Undo
-              </button>
-              <button
-                type="button"
-                onClick={handleRedo}
-                disabled={!canRedo(history)}
-                className={buttonGhost}
-              >
-                Redo
-              </button>
-            </div>
-          </div>
-
-          <ul className="flex flex-col gap-2">
-            {groupOrder.map((sourceId, index) => {
-              const source = sources.get(sourceId);
-              if (!source) return null;
-              const pages = state.pagesByGroup[sourceId] ?? [];
-              return (
-                <GroupRow
-                  key={sourceId}
-                  source={source}
-                  pages={pages}
-                  isFirst={index === 0}
-                  isLast={index === groupOrder.length - 1}
-                  expanded={expandedGroups.has(sourceId)}
-                  isDragging={groupDrag.dragState.draggingId === sourceId}
-                  dropIndicator={
-                    groupDrag.dragState.overId === sourceId
-                      ? groupDrag.dragState.overPosition
-                      : null
-                  }
-                  registerRow={(el) => groupDrag.registerRow(sourceId, el)}
-                  dragHandleProps={groupDrag.handleProps(sourceId)}
-                  onToggleExpand={() => handleToggleExpand(sourceId)}
-                  onMoveUp={() => handleGroupMoveUp(sourceId)}
-                  onMoveDown={() => handleGroupMoveDown(sourceId)}
-                  onRemove={() => handleRemoveGroup(sourceId)}
-                  onMovePage={(pageId, targetIndex) =>
-                    handleMovePage(sourceId, pageId, targetIndex)
-                  }
-                  onRemovePage={(pageId) => handleRemovePage(sourceId, pageId)}
-                  onRotatePage={(pageId, delta) =>
-                    handleRotatePage(sourceId, pageId, delta)
-                  }
-                />
-              );
-            })}
-          </ul>
-
-          <label htmlFor={outputNameId} className="flex flex-col gap-1">
-            <span className={labelText}>Output filename</span>
-            <div className="flex max-w-sm items-center gap-2">
+          <div className="flex flex-col gap-2">
+            <label htmlFor={fileInputId} className={labelText}>
+              PDF files
+            </label>
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`rounded-md border-2 border-dashed p-6 text-center transition-colors ${
+                isDropzoneActive
+                  ? "border-accent bg-accent/5"
+                  : "border-border-strong"
+              }`}
+            >
+              <p className="text-text-muted mb-2 text-sm">
+                Drag PDF files here, or choose files below
+              </p>
               <input
-                id={outputNameId}
-                type="text"
-                value={outputName}
-                onChange={(e) => setOutputName(e.target.value)}
-                className={textField}
+                ref={fileInputRef}
+                id={fileInputId}
+                type="file"
+                accept="application/pdf,.pdf"
+                multiple
+                disabled={isAddingFiles}
+                onChange={handleFileInputChange}
+                className="text-text-muted file:bg-bg-elevated file:text-text file:border-border-strong hover:file:bg-bg-sunken mx-auto text-sm file:mr-3 file:cursor-pointer file:rounded-md file:border file:px-3 file:py-2 file:text-sm file:font-medium"
               />
-              <span className="text-text-muted text-sm">.pdf</span>
             </div>
-          </label>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={handleMerge}
-              disabled={isMerging || pageTotal === 0}
-              className={buttonPrimary}
-            >
-              {isMerging ? "Merging…" : "Merge & prepare download"}
-            </button>
-            {isMerging && (
-              <button
-                type="button"
-                onClick={handleCancelMerge}
-                className={buttonGhost}
-              >
-                Cancel
-              </button>
-            )}
-            <button type="button" onClick={handleReset} className={buttonGhost}>
-              Reset
-            </button>
           </div>
 
-          {isMerging && mergeProgress && (
-            <div className="flex flex-col gap-1">
-              <progress
-                value={mergeProgress.completed}
-                max={mergeProgress.total}
-                className="accent-accent w-full"
-              />
-              <StatusMessage tone="neutral">
-                Merging page {mergeProgress.completed} of {mergeProgress.total}…
-              </StatusMessage>
-            </div>
+          {isAddingFiles && addFilesStatus && (
+            <StatusMessage tone="neutral">{addFilesStatus}</StatusMessage>
           )}
+
+          {fileErrors.length > 0 && (
+            <StatusMessage tone="error">
+              <ul className="list-disc space-y-1 pl-4">
+                {fileErrors.map((message, i) => (
+                  <li key={i}>{message}</li>
+                ))}
+              </ul>
+            </StatusMessage>
+          )}
+
+          {groupOrder.length > 0 && (
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-text text-sm font-medium">
+                  {groupOrder.length} file{groupOrder.length === 1 ? "" : "s"} ·{" "}
+                  {pageTotal} page{pageTotal === 1 ? "" : "s"} total
+                </h2>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleUndo}
+                    disabled={!canUndo(history)}
+                    className={buttonGhost}
+                  >
+                    Undo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRedo}
+                    disabled={!canRedo(history)}
+                    className={buttonGhost}
+                  >
+                    Redo
+                  </button>
+                </div>
+              </div>
+
+              <ul className="flex flex-col gap-2">
+                {groupOrder.map((sourceId, index) => {
+                  const source = sources.get(sourceId);
+                  if (!source) return null;
+                  const pages = state.pagesByGroup[sourceId] ?? [];
+                  return (
+                    <GroupRow
+                      key={sourceId}
+                      source={source}
+                      pages={pages}
+                      isFirst={index === 0}
+                      isLast={index === groupOrder.length - 1}
+                      expanded={expandedGroups.has(sourceId)}
+                      isDragging={groupDrag.dragState.draggingId === sourceId}
+                      dropIndicator={
+                        groupDrag.dragState.overId === sourceId
+                          ? groupDrag.dragState.overPosition
+                          : null
+                      }
+                      registerRow={(el) => groupDrag.registerRow(sourceId, el)}
+                      dragHandleProps={groupDrag.handleProps(sourceId)}
+                      onToggleExpand={() => handleToggleExpand(sourceId)}
+                      onMoveUp={() => handleGroupMoveUp(sourceId)}
+                      onMoveDown={() => handleGroupMoveDown(sourceId)}
+                      onRemove={() => handleRemoveGroup(sourceId)}
+                      onMovePage={(pageId, targetIndex) =>
+                        handleMovePage(sourceId, pageId, targetIndex)
+                      }
+                      onRemovePage={(pageId) =>
+                        handleRemovePage(sourceId, pageId)
+                      }
+                      onRotatePage={(pageId, delta) =>
+                        handleRotatePage(sourceId, pageId, delta)
+                      }
+                    />
+                  );
+                })}
+              </ul>
+            </>
+          )}
+
+          <p className="text-text-muted text-xs">
+            Up to {MAX_FILES} files, {formatBytes(MAX_FILE_BYTES)} each, and{" "}
+            {MAX_TOTAL_PAGES} total pages are supported for in-browser
+            processing.
+          </p>
         </>
-      )}
+      }
+      side={
+        groupOrder.length > 0 && (
+          <>
+            <Panel title="Output">
+              <label htmlFor={outputNameId} className="flex flex-col gap-1">
+                <span className={labelText}>Output filename</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    id={outputNameId}
+                    type="text"
+                    value={outputName}
+                    onChange={(e) => setOutputName(e.target.value)}
+                    className={textField}
+                  />
+                  <span className="text-text-muted text-sm">.pdf</span>
+                </div>
+              </label>
 
-      {mergeStatus && !isMerging && (
-        <StatusMessage tone={mergeStatus.tone}>
-          {mergeStatus.message}
-        </StatusMessage>
-      )}
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleMerge}
+                  disabled={isMerging || pageTotal === 0}
+                  className={buttonPrimary}
+                >
+                  {isMerging ? "Merging…" : "Merge & prepare download"}
+                </button>
+                {isMerging && (
+                  <button
+                    type="button"
+                    onClick={handleCancelMerge}
+                    className={buttonGhost}
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className={buttonGhost}
+                >
+                  Reset
+                </button>
+              </div>
 
-      {result && (
-        <div className="flex flex-col gap-3">
-          <dl className="text-text-muted grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-            <dt className="font-medium">Output size</dt>
-            <dd role="status">{formatBytes(result.blob.size)}</dd>
-          </dl>
-          <div>
-            <button
-              type="button"
-              onClick={handleDownload}
-              className={buttonSecondary}
-            >
-              Download merged PDF
-            </button>
-          </div>
-        </div>
-      )}
+              {isMerging && mergeProgress && (
+                <div className="flex flex-col gap-1">
+                  <progress
+                    value={mergeProgress.completed}
+                    max={mergeProgress.total}
+                    className="accent-accent w-full"
+                  />
+                  <StatusMessage tone="neutral">
+                    Merging page {mergeProgress.completed} of{" "}
+                    {mergeProgress.total}…
+                  </StatusMessage>
+                </div>
+              )}
 
-      <p className="text-text-muted text-xs">
-        Up to {MAX_FILES} files, {formatBytes(MAX_FILE_BYTES)} each, and{" "}
-        {MAX_TOTAL_PAGES} total pages are supported for in-browser processing.
-      </p>
-    </div>
+              {mergeStatus && !isMerging && (
+                <StatusMessage tone={mergeStatus.tone}>
+                  {mergeStatus.message}
+                </StatusMessage>
+              )}
+            </Panel>
+
+            {result && (
+              <Panel title="Result">
+                <dl className="text-text-muted grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                  <dt className="font-medium">Output size</dt>
+                  <dd role="status">{formatBytes(result.blob.size)}</dd>
+                </dl>
+                <div>
+                  <button
+                    type="button"
+                    onClick={handleDownload}
+                    className={buttonSecondary}
+                  >
+                    Download merged PDF
+                  </button>
+                </div>
+              </Panel>
+            )}
+          </>
+        )
+      }
+    />
   );
 }

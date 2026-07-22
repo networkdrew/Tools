@@ -13,9 +13,21 @@ interface Props {
   path: string;
   /** Arbitrary JSON-LD object(s) to embed for this page. */
   structuredData?: Record<string, unknown> | Record<string, unknown>[];
+  /**
+   * "site" (default) renders the shared Header/Footer chrome. "none" omits
+   * both — used by tool pages, which render their own compact application
+   * shell (see ToolLayout.astro) instead of the marketing site chrome.
+   */
+  chrome?: "site" | "none";
 }
 
-const { title, description, path, structuredData } = Astro.props;
+const {
+  title,
+  description,
+  path,
+  structuredData,
+  chrome = "site",
+} = Astro.props;
 
 const canonicalUrl = new URL(path, Astro.site).toString();
 const pageTitle = title === SITE_NAME ? title : `${title} — ${SITE_NAME}`;
@@ -67,12 +79,26 @@ const jsonLdBlocks = structuredData
 
     <script is:inline set:html={themeInitScript} />
   </head>
-  <body class="bg-bg text-text flex min-h-svh flex-col">
+  <body
+    class={chrome === "none"
+      ? "bg-bg text-text"
+      : "bg-bg text-text flex min-h-svh flex-col"}
+  >
     <SkipLink />
-    <Header />
-    <main id="main-content" class="flex-1">
-      <slot />
-    </main>
-    <Footer />
+    {
+      chrome === "site" ? (
+        <>
+          <Header />
+          <main id="main-content" class="flex-1">
+            <slot />
+          </main>
+          <Footer />
+        </>
+      ) : (
+        <main id="main-content" class="h-dvh">
+          <slot />
+        </main>
+      )
+    }
   </body>
 </html>
