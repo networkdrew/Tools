@@ -591,7 +591,7 @@ const rawTools = [
     executionMode: "browser",
     featured: true,
     addedAt: "2026-07-21",
-    relatedTools: [],
+    relatedTools: ["pdf-split-extract-pages"],
     usageNotes: [
       "Password-protected or encrypted PDFs can't be processed here — remove the password in a trusted PDF reader first, then try again.",
       "Pages are copied directly from the original file (not re-rendered as images), so text stays selectable and quality is never lost, even after rotating.",
@@ -601,6 +601,47 @@ const rawTools = [
     seo: {
       description:
         "Free PDF merge tool that runs entirely in your browser. Combine PDFs, drag to reorder files and pages, rotate or remove pages, with nothing ever uploaded.",
+    },
+  },
+  {
+    id: "pdf-split-extract-pages",
+    slug: "pdf-split-extract-pages",
+    name: "PDF Split & Extract Pages",
+    shortDescription:
+      "Extract, remove, or split PDF pages into new files — with page previews, custom ranges, and ZIP downloads.",
+    description: [
+      "Upload one PDF to preview every page as a thumbnail, then extract the pages you select into a new PDF, remove unwanted pages, or split the file — into one PDF per page, fixed-size chunks, or the custom ranges you type in. Rotate any page before generating your output.",
+      "Every output is built by copying each page's original content directly with pdf-lib — an open-source PDF library — rather than rasterizing pages into images, so selectable text, vector graphics, and quality stay exactly as sharp as the source. Splitting into multiple files bundles them into a ZIP, built with fflate, entirely in your browser; nothing is ever uploaded.",
+    ],
+    categoryId: "documents",
+    tags: [
+      "pdf split",
+      "extract pdf pages",
+      "split pdf",
+      "remove pdf pages",
+      "pdf page extractor",
+      "split pdf by pages",
+    ],
+    aliases: [
+      "pdf page remover",
+      "pdf splitter",
+      "extract pages from pdf",
+      "split pdf into multiple files",
+      "pdf range extractor",
+    ],
+    executionMode: "browser",
+    featured: true,
+    addedAt: "2026-07-21",
+    relatedTools: ["pdf-merge-reorder"],
+    usageNotes: [
+      "Password-protected or encrypted PDFs can't be processed here — remove the password in a trusted PDF reader first, then try again.",
+      "Pages are copied directly from the original file (not re-rendered as images), so text stays selectable and quality is never lost, even after rotating.",
+      "Page thumbnails are a preview only — the downloaded PDF is always built from the original page content, not the preview image.",
+      "Files up to 100 MB and 500 pages are supported for in-browser processing; splitting into more than one file downloads a ZIP archive.",
+    ],
+    seo: {
+      description:
+        "Free PDF splitter that runs entirely in your browser. Extract, remove, or split PDF pages by range, page count, or one-per-file, with nothing ever uploaded.",
     },
   },
 ] as const;
