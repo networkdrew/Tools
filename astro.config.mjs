@@ -5,11 +5,22 @@ import react from "@astrojs/react";
 import sitemap from "@astrojs/sitemap";
 import tailwindcss from "@tailwindcss/vite";
 import { SITE_URL } from "./src/lib/config/site.ts";
+import { tools } from "./src/lib/tools/registry.ts";
+
+// Individual tool pages used to live at /tools/<slug>/ (redundant with the
+// tools.drewcassidy.dev subdomain itself). They moved to /<slug>/ off the
+// root — see docs/adding-a-tool.md. These keep the old, possibly-bookmarked
+// or indexed URLs working. /tools/ itself (the "browse all" listing page)
+// is untouched — only individual tool pages moved.
+const legacyToolRedirects = Object.fromEntries(
+  tools.map((tool) => [`/tools/${tool.slug}/`, `/${tool.slug}/`]),
+);
 
 export default defineConfig({
   site: SITE_URL,
   output: "static",
   integrations: [react(), sitemap()],
+  redirects: legacyToolRedirects,
   // Static output + the Cloudflare adapter together means: prerender
   // everything (no SSR), but still emit the thin Worker entry Cloudflare's
   // Workers Static Assets deployment needs to serve dist/ (see wrangler.jsonc).

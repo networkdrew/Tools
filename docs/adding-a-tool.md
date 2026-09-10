@@ -55,4 +55,4 @@ npm run build
 npm run dev   # click through the new tool page manually, including on a narrow viewport
 ```
 
-Confirm: the tool page renders at `/tools/<slug>/`, it appears on `/tools/`, it appears under its category page, Reset actually resets, and invalid input shows a real error message rather than a stack trace or silent failure.
+Confirm: the tool page renders at `/<slug>/` (not `/tools/<slug>/` — see "URL structure" in `docs/architecture.md`), it appears on `/tools/`, it appears under its category page, Reset actually resets, and invalid input shows a real error message rather than a stack trace or silent failure.

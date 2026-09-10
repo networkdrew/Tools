@@ -644,6 +644,50 @@ const rawTools = [
         "Free PDF splitter that runs entirely in your browser. Extract, remove, or split PDF pages by range, page count, or one-per-file, with nothing ever uploaded.",
     },
   },
+  {
+    id: "finance-calculator",
+    slug: "finance-calculator",
+    name: "Finance Calculator",
+    shortDescription:
+      "27 loan, investment, bond, and business calculators in one place, from mortgage payments to WACC.",
+    description: [
+      "Pick a calculator from the dropdown to work out mortgage and loan payments, amortization schedules, compound and simple interest, retirement savings, NPV and IRR, bond pricing and yield, ROI, break-even, DTI and DSCR, EBITDA, WACC, and more.",
+      "Every calculation runs locally in your browser using plain JavaScript arithmetic — nothing you enter is sent anywhere. Figures are for estimation only and aren't financial advice.",
+    ],
+    categoryId: "converters",
+    tags: [
+      "finance calculator",
+      "mortgage calculator",
+      "loan calculator",
+      "compound interest",
+      "npv",
+      "irr",
+      "roi calculator",
+      "wacc",
+      "amortization schedule",
+    ],
+    aliases: [
+      "mortgage payment calculator",
+      "loan amortization calculator",
+      "investment calculator",
+      "bond pricing calculator",
+      "business ratio calculator",
+    ],
+    executionMode: "browser",
+    featured: true,
+    addedAt: "2026-09-10",
+    relatedTools: [],
+    usageNotes: [
+      "Every calculator validates its own inputs — a missing or invalid field shows a specific error instead of silently defaulting to zero.",
+      "Loan Amortization builds the full month-by-month schedule for the term you enter; larger terms mean more rows, not a slower calculation.",
+      "IRR and Bond YTM are found by bisection search (100 iterations), matching standard financial-calculator precision for realistic inputs.",
+      "Currency Conversion uses fixed, approximate reference rates, not a live feed — it's for rough conversions, not trading.",
+    ],
+    seo: {
+      description:
+        "Free all-in-one finance calculator covering loans, mortgages, investments, bonds, and business ratios — 27 calculators, all running in your browser.",
+    },
+  },
 ] as const;
 
 export const tools: readonly ToolMeta[] = rawTools.map((t) =>

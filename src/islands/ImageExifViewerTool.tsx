@@ -250,7 +250,7 @@ export default function ImageExifViewerTool() {
             <p className="text-text-muted text-sm">
               Want this metadata gone instead of just viewing it?{" "}
               <a
-                href="/tools/image-metadata-remover/"
+                href="/image-metadata-remover/"
                 className="text-accent hover:underline"
               >
                 Open the Image Metadata Remover

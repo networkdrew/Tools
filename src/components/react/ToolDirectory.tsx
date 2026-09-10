@@ -122,7 +122,7 @@ export function ToolDirectory() {
             return (
               <li key={tool.id}>
                 <a
-                  href={`/tools/${tool.slug}/`}
+                  href={`/${tool.slug}/`}
                   className="border-border bg-bg-elevated hover:border-accent flex h-full flex-col gap-2 rounded-lg border p-4 transition-colors"
                 >
                   <div className="flex items-center justify-between gap-2">

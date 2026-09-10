@@ -17,7 +17,7 @@ const isNew = isNewTool(tool);
 {
   variant === "compact" ? (
     <a
-      href={`/tools/${tool.slug}/`}
+      href={`/${tool.slug}/`}
       class="border-border bg-bg-elevated hover:border-accent flex items-center gap-3 rounded-md border p-3 transition-colors"
     >
       {category && (
@@ -41,7 +41,7 @@ const isNew = isNewTool(tool);
     </a>
   ) : (
     <a
-      href={`/tools/${tool.slug}/`}
+      href={`/${tool.slug}/`}
       class="group border-border bg-bg-elevated hover:border-accent flex flex-col gap-3 rounded-lg border p-5 transition-colors"
     >
       <div class="flex items-start justify-between gap-2">

@@ -154,7 +154,7 @@ export function SearchPalette() {
                   }}
                   role="option"
                   aria-selected={false}
-                  href={`/tools/${tool.slug}/`}
+                  href={`/${tool.slug}/`}
                   onKeyDown={(e) => handleOptionKeyDown(e, index)}
                   className="hover:bg-bg-sunken focus:bg-bg-sunken flex flex-col gap-0.5 rounded-md p-2 text-sm focus:outline-none"
                 >
