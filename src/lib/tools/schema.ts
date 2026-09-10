@@ -11,8 +11,9 @@ export type ExecutionMode = z.infer<typeof executionModeSchema>;
 export const toolMetaSchema = z.object({
   /** Permanent internal identifier. Never reuse or repurpose after publishing. */
   id: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "id must be kebab-case"),
-  /** URL path segment under /tools/. Usually equal to id; kept distinct so a
-   *  tool can be renamed for SEO without breaking its permanent id. */
+  /** URL path segment at the site root (/<slug>/, not /tools/<slug>/ — see
+   *  docs/architecture.md). Usually equal to id; kept distinct so a tool can
+   *  be renamed for SEO without breaking its permanent id. */
   slug: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "slug must be kebab-case"),
   name: z.string().min(1),
   shortDescription: z.string().min(1).max(160),

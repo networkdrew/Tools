@@ -193,6 +193,6 @@ describe("ImageExifViewerTool", () => {
     const link = await screen.findByRole("link", {
       name: "Open the Image Metadata Remover",
     });
-    expect(link).toHaveAttribute("href", "/tools/image-metadata-remover/");
+    expect(link).toHaveAttribute("href", "/image-metadata-remover/");
   });
 });

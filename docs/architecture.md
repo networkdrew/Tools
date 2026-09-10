@@ -44,7 +44,11 @@ docs/                This file, the tool-adding recipe, the roadmap, deployment 
 
 ## Directory page: a deliberate SEO tradeoff
 
-The `/tools` directory's search and category filtering are a client-rendered React island (`ToolDirectory.tsx`), not a static + progressively-enhanced list. That means a crawler that doesn't execute JavaScript won't see the full tool list _on that specific page_. This is intentional: every tool already has its own fully static, indexable page at `/tools/<slug>/`, every category page (`/categories/<id>/`) statically lists its tools with real `<a>` links, and the sitemap (`@astrojs/sitemap`) includes all of them directly. The directory page's job is being a fast, instant-feeling UX for actual visitors; it doesn't need to also be the crawl path.
+The `/tools` directory's search and category filtering are a client-rendered React island (`ToolDirectory.tsx`), not a static + progressively-enhanced list. That means a crawler that doesn't execute JavaScript won't see the full tool list _on that specific page_. This is intentional: every tool already has its own fully static, indexable page at `/<slug>/` (off the root — see the note below), every category page (`/categories/<id>/`) statically lists its tools with real `<a>` links, and the sitemap (`@astrojs/sitemap`) includes all of them directly. The directory page's job is being a fast, instant-feeling UX for actual visitors; it doesn't need to also be the crawl path.
+
+## URL structure: individual tools live at the root
+
+Individual tool pages are `src/pages/[slug].astro`, served at `/<slug>/` directly off `tools.drewcassidy.dev` — **not** `/tools/<slug>/`, which would repeat "tools" pointlessly given the subdomain is already `tools.*`. `/tools/` itself is a separate, static "browse all" listing page (`src/pages/tools/index.astro`) and is unaffected by this. Old `/tools/<slug>/` URLs (used before this was flattened) still resolve via the `redirects` map built from the tool registry in `astro.config.mjs`. When adding a new tool, its page and every internal link to it should point at `/<slug>/`, not `/tools/<slug>/`.
 
 ## Theming
 

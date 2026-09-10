@@ -38,6 +38,7 @@ const componentLoaders: Record<
   "image-crop-resize": lazy(() => import("@/islands/ImageCropResizeTool")),
   "pdf-merge-reorder": lazy(() => import("@/islands/PdfMergeTool")),
   "pdf-split-extract-pages": lazy(() => import("@/islands/PdfSplitTool")),
+  "finance-calculator": lazy(() => import("@/islands/FinanceCalculatorTool")),
 };
 
 export function getToolIslandIds(): string[] {
